@@ -1,0 +1,99 @@
+{
+  "project_info": {
+    "project_number": "1043464893919",
+    "firebase_url": "https://pragmatic-blend-355802-default-rtdb.firebaseio.com",
+    "project_id": "pragmatic-blend-355802",
+    "storage_bucket": "pragmatic-blend-355802.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1043464893919:android:010faf1c49f5c750fd006a",
+        "android_client_info": {
+          "package_name": "com.example.red_shop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1043464893919-bq7g7hkja3qi15rcqml5ort13dli0eic.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6kEeNpybVZgLBRAEyajx_UQIBL-sU-6Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1043464893919-bq7g7hkja3qi15rcqml5ort13dli0eic.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1043464893919-3oc89s9laa7v416hfse7pdqafa4r8gua.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.redShop"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1043464893919:android:4d711b3997cc8183fd006a",
+        "android_client_info": {
+          "package_name": "com.mikucode.chatapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1043464893919-jl63nn5qf6dfl15cr6dhsoaj256upg03.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mikucode.chatapp",
+            "certificate_hash": "8c012ed4ed55c6aa37bad497a571ed37dfe873a8"
+          }
+        },
+        {
+          "client_id": "1043464893919-kn2mf9bf2mv5tcf63vekr2neupkugisv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mikucode.chatapp",
+            "certificate_hash": "4f64b279f14bb4a5ad73d74e4a47d6311f24c049"
+          }
+        },
+        {
+          "client_id": "1043464893919-bq7g7hkja3qi15rcqml5ort13dli0eic.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6kEeNpybVZgLBRAEyajx_UQIBL-sU-6Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1043464893919-bq7g7hkja3qi15rcqml5ort13dli0eic.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1043464893919-3oc89s9laa7v416hfse7pdqafa4r8gua.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.redShop"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
