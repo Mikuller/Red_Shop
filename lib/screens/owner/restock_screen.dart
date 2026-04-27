@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:red_shop/localization/app_language.dart';
 import 'package:red_shop/models/models.dart';
 import 'package:red_shop/providers/auth_provider.dart';
 import 'package:red_shop/services/shop_service.dart';
@@ -23,12 +24,11 @@ class _RestockScreenState extends State<RestockScreen> {
   bool _isSaving = false;
 
   Future<void> _showAddItemDialog(List<Product> products) async {
+    final strings = context.readStrings;
     if (products.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Create products before recording restocks.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.t('createProductsFirst'))));
       return;
     }
 
@@ -56,13 +56,15 @@ class _RestockScreenState extends State<RestockScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Add purchase item',
+                    strings.t('addPurchaseItem'),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 18),
                   DropdownButtonFormField<String>(
                     initialValue: selectedProductId,
-                    decoration: const InputDecoration(labelText: 'Product'),
+                    decoration: InputDecoration(
+                      labelText: strings.t('product'),
+                    ),
                     items: products
                         .map(
                           (product) => DropdownMenuItem(
@@ -81,11 +83,13 @@ class _RestockScreenState extends State<RestockScreen> {
                   TextFormField(
                     controller: quantityController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Quantity'),
+                    decoration: InputDecoration(
+                      labelText: strings.t('quantity'),
+                    ),
                     validator: (value) {
                       final quantity = int.tryParse(value ?? '');
                       if (quantity == null || quantity <= 0) {
-                        return 'Enter a valid quantity.';
+                        return strings.t('validQuantity');
                       }
 
                       return null;
@@ -97,11 +101,13 @@ class _RestockScreenState extends State<RestockScreen> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(labelText: 'Unit cost'),
+                    decoration: InputDecoration(
+                      labelText: strings.t('unitCost'),
+                    ),
                     validator: (value) {
                       final unitCost = double.tryParse(value ?? '');
                       if (unitCost == null || unitCost < 0) {
-                        return 'Enter a valid unit cost.';
+                        return strings.t('validUnitCost');
                       }
 
                       return null;
@@ -152,7 +158,7 @@ class _RestockScreenState extends State<RestockScreen> {
 
                       Navigator.of(sheetContext).pop();
                     },
-                    child: const Text('Add item'),
+                    child: Text(strings.t('addItem')),
                   ),
                 ],
               ),
@@ -164,10 +170,11 @@ class _RestockScreenState extends State<RestockScreen> {
   }
 
   Future<void> _recordPurchase(UserModel actor) async {
+    final strings = context.readStrings;
     if (_items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add at least one item first.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.t('addOneItemFirst'))));
       return;
     }
 
@@ -188,9 +195,9 @@ class _RestockScreenState extends State<RestockScreen> {
         _supplierController.clear();
         _noteController.clear();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Restock purchase recorded.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.t('restockRecorded'))));
     } catch (error) {
       if (!mounted) {
         return;
@@ -216,9 +223,13 @@ class _RestockScreenState extends State<RestockScreen> {
   @override
   Widget build(BuildContext context) {
     final actor = context.watch<ShopAuthProvider>().userModel;
+    final strings = context.strings;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Restocking')),
+      appBar: AppBar(
+        title: Text(strings.t('restocking')),
+        actions: const [LanguageMenuButton()],
+      ),
       body: StreamBuilder<List<Product>>(
         stream: _shopService.watchProducts(),
         builder: (context, productSnapshot) {
@@ -242,14 +253,14 @@ class _RestockScreenState extends State<RestockScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'New purchase',
+                        strings.t('newPurchase'),
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 14),
                       TextField(
                         controller: _supplierController,
-                        decoration: const InputDecoration(
-                          labelText: 'Supplier or source',
+                        decoration: InputDecoration(
+                          labelText: strings.t('supplierOrSource'),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -257,8 +268,8 @@ class _RestockScreenState extends State<RestockScreen> {
                         controller: _noteController,
                         minLines: 2,
                         maxLines: 4,
-                        decoration: const InputDecoration(
-                          labelText: 'Note or invoice details',
+                        decoration: InputDecoration(
+                          labelText: strings.t('noteOrInvoice'),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -268,7 +279,7 @@ class _RestockScreenState extends State<RestockScreen> {
                             child: OutlinedButton.icon(
                               onPressed: () => _showAddItemDialog(products),
                               icon: const Icon(Icons.add),
-                              label: const Text('Add item'),
+                              label: Text(strings.t('addItem')),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -286,23 +297,23 @@ class _RestockScreenState extends State<RestockScreen> {
                                       ),
                                     )
                                   : const Icon(Icons.save_outlined),
-                              label: const Text('Record'),
+                              label: Text(strings.t('record')),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
                       SummaryRow(
-                        label: 'Current purchase total',
+                        label: strings.t('currentPurchaseTotal'),
                         value: formatCurrency(totalCost),
                         emphasize: true,
                       ),
                       const SizedBox(height: 12),
                       if (_items.isEmpty)
-                        const EmptyStateView(
+                        EmptyStateView(
                           icon: Icons.local_shipping_outlined,
-                          title: 'No items in this purchase yet',
-                          message: 'Add products with quantity and unit cost.',
+                          title: strings.t('noItemsInPurchaseYet'),
+                          message: strings.t('purchaseHelp'),
                         )
                       else
                         ..._items.asMap().entries.map(
@@ -326,7 +337,7 @@ class _RestockScreenState extends State<RestockScreen> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        '${entry.value.quantity} pcs | ${formatCurrency(entry.value.unitCost)} each',
+                                        '${entry.value.quantity} ${strings.t('pcs')} | ${formatCurrency(entry.value.unitCost)} ${strings.t('each')}',
                                         style: Theme.of(
                                           context,
                                         ).textTheme.bodyMedium,
@@ -357,7 +368,7 @@ class _RestockScreenState extends State<RestockScreen> {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Recent purchases',
+                  strings.t('recentPurchases'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 12),
@@ -372,11 +383,10 @@ class _RestockScreenState extends State<RestockScreen> {
                     final purchases =
                         purchaseSnapshot.data ?? <PurchaseRecord>[];
                     if (purchases.isEmpty) {
-                      return const EmptyStateView(
+                      return EmptyStateView(
                         icon: Icons.history_toggle_off_outlined,
-                        title: 'No purchase history yet',
-                        message:
-                            'Recorded restocks will appear here with line-level cost details.',
+                        title: strings.t('noPurchaseHistoryYet'),
+                        message: strings.t('purchaseHistoryHelp'),
                       );
                     }
 
@@ -389,7 +399,7 @@ class _RestockScreenState extends State<RestockScreen> {
                             child: ExpansionTile(
                               title: Text(
                                 purchase.supplier.isEmpty
-                                    ? 'Purchase ${purchase.id.substring(0, 6)}'
+                                    ? '${strings.t('purchaseLabel')} ${purchase.id.substring(0, 6)}'
                                     : purchase.supplier,
                               ),
                               subtitle: Text(
@@ -418,7 +428,7 @@ class _RestockScreenState extends State<RestockScreen> {
                                 ...purchase.items.map(
                                   (item) => SummaryRow(
                                     label:
-                                        '${item.productName} | ${item.quantity} pcs',
+                                        '${item.productName} | ${item.quantity} ${strings.t('pcs')}',
                                     value: formatCurrency(item.lineTotal),
                                   ),
                                 ),

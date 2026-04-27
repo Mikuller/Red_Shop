@@ -1,12 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:red_shop/firebase_options.dart';
+import 'package:red_shop/localization/app_language.dart';
 import 'package:red_shop/models/models.dart';
 import 'package:red_shop/providers/auth_provider.dart';
 import 'package:red_shop/screens/auth/login_screen.dart';
 import 'package:red_shop/screens/clerk/clerk_home.dart';
+import 'package:red_shop/screens/dev/cheatsheet_preview.dart';
 import 'package:red_shop/screens/owner/owner_home.dart';
 import 'package:red_shop/services/auth_service.dart';
 import 'package:red_shop/theme/app_theme.dart';
@@ -23,16 +26,35 @@ class RedShopApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ShopAuthProvider(),
-      child: MaterialApp(
-        title: 'Red Computer',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.build(),
-        home: const AuthWrapper(),
+    final previewMode = cheatsheetPreviewModeFromUri(Uri.base);
+    final initialLanguage = _languageFromUri(Uri.base);
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ShopAuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AppLanguageProvider(initialLanguage: initialLanguage),
+        ),
+      ],
+      child: Consumer<AppLanguageProvider>(
+        builder: (context, language, _) {
+          return MaterialApp(
+            title: language.strings.t('appName'),
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.build(),
+            home: !kReleaseMode && previewMode != null
+                ? CheatsheetPreviewScreen(mode: previewMode)
+                : const AuthWrapper(),
+          );
+        },
       ),
     );
   }
+}
+
+AppLanguage _languageFromUri(Uri uri) {
+  return uri.queryParameters['lang'] == 'am'
+      ? AppLanguage.amharic
+      : AppLanguage.english;
 }
 
 class AuthWrapper extends StatelessWidget {
@@ -44,9 +66,10 @@ class AuthWrapper extends StatelessWidget {
       stream: AuthService().user,
       builder: (context, authSnapshot) {
         if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return const _BlockingScreen(
-            title: 'Preparing your workspace',
-            message: 'Connecting to Firebase and loading your profile.',
+          final strings = context.strings;
+          return _BlockingScreen(
+            title: strings.t('preparingWorkspace'),
+            message: strings.t('connectingFirebase'),
           );
         }
 
@@ -62,19 +85,20 @@ class AuthWrapper extends StatelessWidget {
           future: AuthService().getUserProfile(firebaseUser.uid),
           builder: (context, profileSnapshot) {
             if (profileSnapshot.connectionState == ConnectionState.waiting) {
-              return const _BlockingScreen(
-                title: 'Loading your workspace',
-                message: 'Checking your role and shop access.',
+              final strings = context.strings;
+              return _BlockingScreen(
+                title: strings.t('loadingWorkspace'),
+                message: strings.t('checkingAccess'),
               );
             }
 
             final profile = profileSnapshot.data;
             if (profile == null) {
+              final strings = context.strings;
               return _ActionRequiredScreen(
-                title: 'Profile missing',
-                message:
-                    'Your Firebase account exists, but the shop profile record is missing.',
-                actionLabel: 'Sign out',
+                title: strings.t('profileMissingTitle'),
+                message: strings.t('profileMissingMessage'),
+                actionLabel: strings.t('signOut'),
                 onAction: () async {
                   await context.read<ShopAuthProvider>().logout();
                 },
@@ -86,11 +110,11 @@ class AuthWrapper extends StatelessWidget {
             });
 
             if (!profile.active) {
+              final strings = context.strings;
               return _ActionRequiredScreen(
-                title: 'Access disabled',
-                message:
-                    'This account has been disabled by the owner. Please contact the shop owner if that looks wrong.',
-                actionLabel: 'Sign out',
+                title: strings.t('accessDisabledTitle'),
+                message: strings.t('accessDisabledMessage'),
+                actionLabel: strings.t('signOut'),
                 onAction: () async {
                   await context.read<ShopAuthProvider>().logout();
                 },

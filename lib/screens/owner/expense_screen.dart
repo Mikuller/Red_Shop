@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:red_shop/localization/app_language.dart';
 import 'package:red_shop/models/models.dart';
 import 'package:red_shop/providers/auth_provider.dart';
 import 'package:red_shop/services/shop_service.dart';
@@ -17,6 +18,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   final ShopService _shopService = ShopService();
 
   Future<void> _showExpenseForm() async {
+    final strings = context.readStrings;
     final actor = context.read<ShopAuthProvider>().userModel;
     if (actor == null) {
       return;
@@ -48,18 +50,18 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Add expense',
+                    strings.t('addExpense'),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 18),
                   DropdownButtonFormField<ExpenseKind>(
                     initialValue: kind,
-                    decoration: const InputDecoration(labelText: 'Type'),
+                    decoration: InputDecoration(labelText: strings.t('type')),
                     items: ExpenseKind.values
                         .map(
                           (value) => DropdownMenuItem(
                             value: value,
-                            child: Text(expenseKindLabel(value)),
+                            child: Text(strings.expenseKindLabel(value)),
                           ),
                         )
                         .toList(),
@@ -72,15 +74,19 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: descriptionController,
-                    decoration: const InputDecoration(labelText: 'Description'),
+                    decoration: InputDecoration(
+                      labelText: strings.t('description'),
+                    ),
                     validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Description is required.'
+                        ? strings.t('descriptionRequired')
                         : null,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: categoryController,
-                    decoration: const InputDecoration(labelText: 'Category'),
+                    decoration: InputDecoration(
+                      labelText: strings.t('category'),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
@@ -88,11 +94,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(labelText: 'Amount'),
+                    decoration: InputDecoration(labelText: strings.t('amount')),
                     validator: (value) {
                       final amount = double.tryParse(value ?? '');
                       if (amount == null || amount <= 0) {
-                        return 'Enter a valid amount.';
+                        return strings.t('validAmount');
                       }
 
                       return null;
@@ -146,7 +152,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Save expense'),
+                        : Text(strings.t('saveExpense')),
                   ),
                 ],
               ),
@@ -158,19 +164,22 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Future<void> _deleteExpense(ExpenseRecord expense) async {
+    final strings = context.readStrings;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete expense'),
-        content: Text('Delete "${expense.description}"?'),
+        title: Text(strings.t('deleteExpense')),
+        content: Text(
+          strings.t('deleteExpenseMessage', {'name': expense.description}),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(strings.t('cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(strings.t('delete')),
           ),
         ],
       ),
@@ -185,8 +194,12 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     return Scaffold(
-      appBar: AppBar(title: const Text('Expenses')),
+      appBar: AppBar(
+        title: Text(strings.t('expenses')),
+        actions: const [LanguageMenuButton()],
+      ),
       body: StreamBuilder<List<ExpenseRecord>>(
         stream: _shopService.watchExpenses(),
         builder: (context, snapshot) {
@@ -211,7 +224,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     Expanded(
                       child: AppPanel(
                         child: SummaryRow(
-                          label: 'Operating',
+                          label: strings.t('operating'),
                           value: formatCurrency(operating),
                           emphasize: true,
                         ),
@@ -221,7 +234,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     Expanded(
                       child: AppPanel(
                         child: SummaryRow(
-                          label: 'Withdrawals',
+                          label: strings.t('withdrawals'),
                           value: formatCurrency(withdrawals),
                           emphasize: true,
                         ),
@@ -233,13 +246,12 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               const SizedBox(height: 10),
               Expanded(
                 child: expenses.isEmpty
-                    ? const Padding(
+                    ? Padding(
                         padding: EdgeInsets.all(20),
                         child: EmptyStateView(
                           icon: Icons.receipt_long_outlined,
-                          title: 'No expenses yet',
-                          message:
-                              'Track operating costs and owner withdrawals here.',
+                          title: strings.t('noExpenseItemsYet'),
+                          message: strings.t('expenseHelp'),
                         ),
                       )
                     : ListView.separated(
@@ -287,7 +299,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                                       if (expense.createdByName.isNotEmpty) ...[
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Added by ${expense.createdByName}',
+                                          strings.t('addedBy', {
+                                            'name': expense.createdByName,
+                                          }),
                                           style: Theme.of(
                                             context,
                                           ).textTheme.bodyMedium,
@@ -312,7 +326,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                                     const SizedBox(height: 6),
                                     Chip(
                                       label: Text(
-                                        expenseKindLabel(expense.kind),
+                                        strings.expenseKindLabel(expense.kind),
                                       ),
                                     ),
                                     IconButton(
@@ -334,7 +348,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showExpenseForm,
         icon: const Icon(Icons.add),
-        label: const Text('Expense'),
+        label: Text(strings.t('expenseFab')),
       ),
     );
   }

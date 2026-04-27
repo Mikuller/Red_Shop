@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:red_shop/localization/app_language.dart';
 import 'package:red_shop/models/models.dart';
 import 'package:red_shop/screens/owner/restock_screen.dart';
 import 'package:red_shop/services/shop_service.dart';
@@ -7,7 +8,9 @@ import 'package:red_shop/utils/formatters.dart';
 import 'package:red_shop/widgets/shop_widgets.dart';
 
 class InventoryScreen extends StatefulWidget {
-  const InventoryScreen({super.key});
+  final bool startLowStockOnly;
+
+  const InventoryScreen({super.key, this.startLowStockOnly = false});
 
   @override
   State<InventoryScreen> createState() => _InventoryScreenState();
@@ -18,7 +21,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
   String _query = '';
   bool _showLowStockOnly = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _showLowStockOnly = widget.startLowStockOnly;
+  }
+
   Future<void> _showProductForm([Product? product]) async {
+    final strings = context.readStrings;
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: product?.name);
     final categoryController = TextEditingController(text: product?.category);
@@ -59,27 +69,31 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      product == null ? 'Add product' : 'Edit product',
+                      product == null
+                          ? strings.t('addProduct')
+                          : strings.t('editProduct'),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 18),
                     TextFormField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Name'),
+                      decoration: InputDecoration(labelText: strings.t('name')),
                       validator: (value) =>
                           value == null || value.trim().isEmpty
-                          ? 'Name is required.'
+                          ? strings.t('nameRequired')
                           : null,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: categoryController,
-                      decoration: const InputDecoration(labelText: 'Category'),
+                      decoration: InputDecoration(
+                        labelText: strings.t('category'),
+                      ),
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: skuController,
-                      decoration: const InputDecoration(labelText: 'SKU'),
+                      decoration: InputDecoration(labelText: strings.t('sku')),
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -87,13 +101,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Suggested selling price',
+                      decoration: InputDecoration(
+                        labelText: strings.t('suggestedSellingPrice'),
                       ),
                       validator: (value) {
                         final price = double.tryParse(value ?? '');
                         if (price == null || price < 0) {
-                          return 'Enter a valid price.';
+                          return strings.t('validPrice');
                         }
 
                         return null;
@@ -103,13 +117,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     TextFormField(
                       controller: lowStockController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Low stock threshold',
+                      decoration: InputDecoration(
+                        labelText: strings.t('lowStockThreshold'),
                       ),
                       validator: (value) {
                         final threshold = int.tryParse(value ?? '');
                         if (threshold == null || threshold < 0) {
-                          return 'Enter a valid threshold.';
+                          return strings.t('validThreshold');
                         }
 
                         return null;
@@ -120,8 +134,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       TextFormField(
                         controller: openingStockController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Opening stock',
+                        decoration: InputDecoration(
+                          labelText: strings.t('openingStock'),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -130,8 +144,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        decoration: const InputDecoration(
-                          labelText: 'Opening unit cost',
+                        decoration: InputDecoration(
+                          labelText: strings.t('openingUnitCost'),
                         ),
                       ),
                     ],
@@ -140,14 +154,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       controller: descriptionController,
                       minLines: 2,
                       maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
+                      decoration: InputDecoration(
+                        labelText: strings.t('description'),
                       ),
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: imageController,
-                      decoration: const InputDecoration(labelText: 'Image URL'),
+                      decoration: InputDecoration(
+                        labelText: strings.t('imageUrl'),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
@@ -222,8 +238,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                   SnackBar(
                                     content: Text(
                                       product == null
-                                          ? 'Product added.'
-                                          : 'Product updated.',
+                                          ? strings.t('productAdded')
+                                          : strings.t('productUpdated'),
                                     ),
                                   ),
                                 );
@@ -245,7 +261,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(
-                              product == null ? 'Save product' : 'Save changes',
+                              product == null
+                                  ? strings.t('saveProduct')
+                                  : strings.t('saveChanges'),
                             ),
                     ),
                   ],
@@ -259,22 +277,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Future<void> _confirmDelete(Product product) async {
+    final strings = context.readStrings;
     final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete product'),
+        title: Text(strings.t('deleteProduct')),
         content: Text(
-          'Delete ${product.name}? This only works when stock is already zero.',
+          strings.t('deleteProductMessage', {'name': product.name}),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(strings.t('cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(strings.t('delete')),
           ),
         ],
       ),
@@ -290,7 +309,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
         return;
       }
 
-      messenger.showSnackBar(const SnackBar(content: Text('Product deleted.')));
+      messenger.showSnackBar(
+        SnackBar(content: Text(strings.t('productDeleted'))),
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -302,12 +323,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inventory'),
+        title: Text(strings.t('inventory')),
         actions: [
+          const LanguageMenuButton(),
           IconButton(
-            tooltip: 'Add product',
+            tooltip: strings.t('addProduct'),
             onPressed: _showProductForm,
             icon: const Icon(Icons.add),
           ),
@@ -348,8 +371,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     TextField(
                       onChanged: (value) =>
                           setState(() => _query = value.trim()),
-                      decoration: const InputDecoration(
-                        hintText: 'Search by name, category, or SKU',
+                      decoration: InputDecoration(
+                        hintText: strings.t('searchProducts'),
                         prefixIcon: Icon(Icons.search),
                       ),
                     ),
@@ -357,14 +380,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     Row(
                       children: [
                         FilterChip(
-                          label: const Text('Low stock only'),
+                          label: Text(strings.t('lowStockOnly')),
                           selected: _showLowStockOnly,
                           onSelected: (selected) =>
                               setState(() => _showLowStockOnly = selected),
                         ),
                         const Spacer(),
                         Text(
-                          '${filtered.length} products',
+                          strings.t('productCount', {
+                            'count': '${filtered.length}',
+                          }),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
@@ -375,7 +400,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         Expanded(
                           child: AppPanel(
                             child: SummaryRow(
-                              label: 'Units in stock',
+                              label: strings.t('unitsInStock'),
                               value: '$units',
                               emphasize: true,
                             ),
@@ -385,7 +410,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         Expanded(
                           child: AppPanel(
                             child: SummaryRow(
-                              label: 'Stock value',
+                              label: strings.t('stockValue'),
                               value: formatCurrency(inventoryValue),
                               emphasize: true,
                             ),
@@ -404,12 +429,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         child: EmptyStateView(
                           icon: Icons.inventory_2_outlined,
                           title: products.isEmpty
-                              ? 'No products yet'
-                              : 'Nothing matched that filter',
+                              ? strings.t('noProductsYet')
+                              : strings.t('noFilterMatch'),
                           message: products.isEmpty
-                              ? 'Create your first product and start building stock.'
-                              : 'Try a different search or remove the low-stock filter.',
-                          actionLabel: products.isEmpty ? 'Add product' : null,
+                              ? strings.t('createFirstProduct')
+                              : strings.t('tryDifferentSearch'),
+                          actionLabel: products.isEmpty
+                              ? strings.t('addProduct')
+                              : null,
                           onAction: products.isEmpty
                               ? () => _showProductForm()
                               : null,
@@ -467,18 +494,22 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                                   break;
                                               }
                                             },
-                                            itemBuilder: (context) => const [
+                                            itemBuilder: (context) => [
                                               PopupMenuItem(
                                                 value: 'edit',
-                                                child: Text('Edit'),
+                                                child: Text(strings.t('edit')),
                                               ),
                                               PopupMenuItem(
                                                 value: 'restock',
-                                                child: Text('Restock'),
+                                                child: Text(
+                                                  strings.t('restock'),
+                                                ),
                                               ),
                                               PopupMenuItem(
                                                 value: 'delete',
-                                                child: Text('Delete'),
+                                                child: Text(
+                                                  strings.t('delete'),
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -487,7 +518,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                       const SizedBox(height: 6),
                                       Text(
                                         product.category.isEmpty
-                                            ? 'Uncategorized'
+                                            ? strings.t('uncategorized')
                                             : product.category,
                                         style: Theme.of(
                                           context,
@@ -511,19 +542,31 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                         children: [
                                           StockBadge(product: product),
                                           Text(
-                                            'Cost ${formatCurrency(product.averageCost)}',
+                                            strings.t('cost', {
+                                              'amount': formatCurrency(
+                                                product.averageCost,
+                                              ),
+                                            }),
                                             style: Theme.of(
                                               context,
                                             ).textTheme.bodyMedium,
                                           ),
                                           Text(
-                                            'Suggested ${formatCurrency(product.suggestedSellingPrice)}',
+                                            strings.t('suggested', {
+                                              'amount': formatCurrency(
+                                                product.suggestedSellingPrice,
+                                              ),
+                                            }),
                                             style: Theme.of(
                                               context,
                                             ).textTheme.bodyMedium,
                                           ),
                                           Text(
-                                            'Margin ${formatCurrency(product.marginPerUnit)}',
+                                            strings.t('margin', {
+                                              'amount': formatCurrency(
+                                                product.marginPerUnit,
+                                              ),
+                                            }),
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodyMedium
@@ -552,7 +595,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showProductForm,
         icon: const Icon(Icons.add),
-        label: const Text('Product'),
+        label: Text(strings.t('product')),
       ),
     );
   }

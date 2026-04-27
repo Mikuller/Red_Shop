@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:red_shop/localization/app_language.dart';
 import 'package:red_shop/models/models.dart';
 import 'package:red_shop/providers/auth_provider.dart';
 import 'package:red_shop/screens/owner/expense_screen.dart';
@@ -20,15 +21,16 @@ class OwnerHome extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<ShopAuthProvider>();
     final user = auth.userModel;
+    final strings = context.strings;
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Red Computer'),
+            Text(strings.t('appName')),
             Text(
-              user?.name ?? 'Owner console',
+              user?.name ?? strings.t('ownerConsole'),
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
@@ -36,19 +38,20 @@ class OwnerHome extends StatelessWidget {
           ],
         ),
         actions: [
+          const LanguageMenuButton(),
           IconButton(
-            tooltip: 'Open POS',
+            tooltip: strings.t('openPos'),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const PosScreen(title: 'Owner POS'),
+                  builder: (_) => PosScreen(title: strings.t('ownerPos')),
                 ),
               );
             },
             icon: const Icon(Icons.point_of_sale_outlined),
           ),
           IconButton(
-            tooltip: 'Logout',
+            tooltip: strings.t('logout'),
             onPressed: () => context.read<ShopAuthProvider>().logout(),
             icon: const Icon(Icons.logout),
           ),
@@ -67,6 +70,10 @@ class OwnerHome extends StatelessWidget {
             builder: (context, constraints) {
               final statCrossAxisCount = constraints.maxWidth > 920 ? 4 : 2;
               final actionCrossAxisCount = constraints.maxWidth > 920 ? 3 : 2;
+              final statCardHeight = constraints.maxWidth > 920 ? 168.0 : 196.0;
+              final actionCardHeight = constraints.maxWidth > 920
+                  ? 168.0
+                  : 188.0;
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -75,43 +82,48 @@ class OwnerHome extends StatelessWidget {
                   children: [
                     _HeroCard(user: user, summary: summary),
                     const SizedBox(height: 18),
-                    GridView.count(
-                      crossAxisCount: statCrossAxisCount,
+                    GridView(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                      childAspectRatio: 1.3,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: statCrossAxisCount,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        mainAxisExtent: statCardHeight,
+                      ),
                       children: [
                         DashboardStatCard(
-                          title: 'Total revenue',
+                          title: strings.t('moneyIn'),
                           value: formatCurrency(summary.totalRevenue),
-                          subtitle: '${summary.salesCount} completed sales',
+                          subtitle: strings.t('salesDone', {
+                            'count': '${summary.salesCount}',
+                          }),
                           icon: Icons.payments_outlined,
                           color: AppTheme.success,
                         ),
                         DashboardStatCard(
-                          title: 'Gross profit',
+                          title: strings.t('profit'),
                           value: formatCurrency(summary.grossProfit),
-                          subtitle: 'Before expenses and withdrawals',
+                          subtitle: strings.t('beforeShopCosts'),
                           icon: Icons.trending_up_outlined,
                           color: Theme.of(context).colorScheme.primary,
                         ),
                         DashboardStatCard(
-                          title: 'Expenses',
+                          title: strings.t('costs'),
                           value: formatCurrency(
                             summary.operatingExpenses +
                                 summary.withdrawalExpenses,
                           ),
-                          subtitle: 'Operating + withdrawals',
+                          subtitle: strings.t('shopCostsAndTakeouts'),
                           icon: Icons.receipt_long_outlined,
                           color: AppTheme.warning,
                         ),
                         DashboardStatCard(
-                          title: 'Inventory value',
+                          title: strings.t('stockValue'),
                           value: formatCurrency(summary.inventoryValue),
-                          subtitle:
-                              '${summary.totalUnitsInStock} units in stock',
+                          subtitle: strings.t('unitsInStockCount', {
+                            'count': '${summary.totalUnitsInStock}',
+                          }),
                           icon: Icons.inventory_2_outlined,
                           color: const Color(0xFF6FA8FF),
                         ),
@@ -119,22 +131,25 @@ class OwnerHome extends StatelessWidget {
                     ),
                     const SizedBox(height: 22),
                     Text(
-                      'Quick actions',
+                      strings.t('quickActions'),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 12),
-                    GridView.count(
-                      crossAxisCount: actionCrossAxisCount,
+                    GridView(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                      childAspectRatio: 1.5,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: actionCrossAxisCount,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        mainAxisExtent: actionCardHeight,
+                      ),
                       children: [
-                        _ActionCard(
+                        ActionShortcutCard(
                           icon: Icons.inventory_2_outlined,
-                          title: 'Inventory',
-                          subtitle: 'Products and stock view',
+                          title: strings.t('inventory'),
+                          subtitle: strings.t('inventoryShort'),
+                          hint: strings.t('tapToOpen'),
                           color: const Color(0xFF6FA8FF),
                           onTap: () {
                             Navigator.of(context).push(
@@ -144,10 +159,11 @@ class OwnerHome extends StatelessWidget {
                             );
                           },
                         ),
-                        _ActionCard(
+                        ActionShortcutCard(
                           icon: Icons.local_shipping_outlined,
-                          title: 'Restocking',
-                          subtitle: 'Record purchase arrivals',
+                          title: strings.t('restocking'),
+                          subtitle: strings.t('recordPurchaseArrivals'),
+                          hint: strings.t('tapToOpen'),
                           color: AppTheme.warning,
                           onTap: () {
                             Navigator.of(context).push(
@@ -157,24 +173,26 @@ class OwnerHome extends StatelessWidget {
                             );
                           },
                         ),
-                        _ActionCard(
+                        ActionShortcutCard(
                           icon: Icons.point_of_sale_outlined,
-                          title: 'POS',
-                          subtitle: 'Start a sale',
+                          title: strings.t('pos'),
+                          subtitle: strings.t('startSale'),
+                          hint: strings.t('tapToOpen'),
                           color: Theme.of(context).colorScheme.primary,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) =>
-                                    const PosScreen(title: 'Owner POS'),
+                                    PosScreen(title: strings.t('ownerPos')),
                               ),
                             );
                           },
                         ),
-                        _ActionCard(
+                        ActionShortcutCard(
                           icon: Icons.account_balance_wallet_outlined,
-                          title: 'Expenses',
-                          subtitle: 'Track spend and withdrawals',
+                          title: strings.t('expenses'),
+                          subtitle: strings.t('trackSpendAndWithdrawals'),
+                          hint: strings.t('tapToOpen'),
                           color: const Color(0xFFFF7B72),
                           onTap: () {
                             Navigator.of(context).push(
@@ -184,10 +202,11 @@ class OwnerHome extends StatelessWidget {
                             );
                           },
                         ),
-                        _ActionCard(
+                        ActionShortcutCard(
                           icon: Icons.bar_chart_outlined,
-                          title: 'Reports',
-                          subtitle: 'Profit and best sellers',
+                          title: strings.t('reports'),
+                          subtitle: strings.t('profitAndBestSellers'),
+                          hint: strings.t('tapToOpen'),
                           color: AppTheme.success,
                           onTap: () {
                             Navigator.of(context).push(
@@ -197,10 +216,11 @@ class OwnerHome extends StatelessWidget {
                             );
                           },
                         ),
-                        _ActionCard(
+                        ActionShortcutCard(
                           icon: Icons.group_outlined,
-                          title: 'Staff',
-                          subtitle: 'Create and manage access',
+                          title: strings.t('staff'),
+                          subtitle: strings.t('createManageAccess'),
+                          hint: strings.t('tapToOpen'),
                           color: const Color(0xFFA78BFA),
                           onTap: () {
                             Navigator.of(context).push(
@@ -235,6 +255,7 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -251,14 +272,17 @@ class _HeroCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Welcome back, ${_firstName(user?.name)}',
+            strings.t('welcomeBack', {'name': _firstName(context, user?.name)}),
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Text(
-            'Today: ${summary.todaySalesCount} sale${summary.todaySalesCount == 1 ? '' : 's'} | ${formatCurrency(summary.todayRevenue)}',
+            strings.t('todaySummary', {
+              'count': '${summary.todaySalesCount}',
+              'amount': formatCurrency(summary.todayRevenue),
+            }),
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 20),
@@ -266,20 +290,43 @@ class _HeroCard extends StatelessWidget {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _HeroBadge(
+              HeroMetricBadge(
                 icon: Icons.trending_up_outlined,
-                label: 'Net profit',
+                label: strings.t('netProfit'),
                 value: formatCurrency(summary.netProfit),
+                hint: strings.t('tapToOpen'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ReportsScreen()),
+                  );
+                },
               ),
-              _HeroBadge(
+              HeroMetricBadge(
                 icon: Icons.warning_amber_rounded,
-                label: 'Low stock',
-                value: '${summary.lowStockProducts.length} items',
+                label: strings.t('lowStock'),
+                value: strings.t('itemCountShort', {
+                  'count': '${summary.lowStockProducts.length}',
+                }),
+                hint: strings.t('tapToOpen'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const InventoryScreen(startLowStockOnly: true),
+                    ),
+                  );
+                },
               ),
-              _HeroBadge(
+              HeroMetricBadge(
                 icon: Icons.shopping_bag_outlined,
-                label: 'Restocks',
+                label: strings.t('restocks'),
                 value: formatCurrency(summary.restockSpend),
+                hint: strings.t('tapToOpen'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RestockScreen()),
+                  );
+                },
               ),
             ],
           ),
@@ -288,92 +335,12 @@ class _HeroCard extends StatelessWidget {
     );
   }
 
-  String _firstName(String? name) {
+  String _firstName(BuildContext context, String? name) {
     if (name == null || name.trim().isEmpty) {
-      return 'Owner';
+      return context.strings.t('ownerFallbackName');
     }
 
     return name.trim().split(' ').first;
-  }
-}
-
-class _HeroBadge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _HeroBadge({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(18),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withAlpha(24)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value, style: Theme.of(context).textTheme.titleMedium),
-              Text(label, style: Theme.of(context).textTheme.bodyMedium),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppPanel(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundColor: color.withAlpha(36),
-            foregroundColor: color,
-            child: Icon(icon),
-          ),
-          const Spacer(),
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
-        ],
-      ),
-    );
   }
 }
 
@@ -384,15 +351,19 @@ class _TopSellersPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     return AppPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Top sellers', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            strings.t('topSellers'),
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 12),
           if (summary.topSellingItems.isEmpty)
             Text(
-              'Sales will surface your best-performing products here.',
+              strings.t('topSellersEmpty'),
               style: Theme.of(context).textTheme.bodyMedium,
             )
           else
@@ -425,7 +396,10 @@ class _TopSellersPanel extends StatelessWidget {
                                 ),
                           ),
                           Text(
-                            '${formatCurrency(item.revenue)} revenue | ${formatCurrency(item.grossProfit)} profit',
+                            strings.t('revenueProfitLine', {
+                              'revenue': formatCurrency(item.revenue),
+                              'profit': formatCurrency(item.grossProfit),
+                            }),
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
@@ -448,18 +422,19 @@ class _LowStockPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     return AppPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Low stock watch',
+            strings.t('lowStockWatch'),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
           if (summary.lowStockProducts.isEmpty)
             Text(
-              'Everything is stocked above its threshold right now.',
+              strings.t('allStockOkay'),
               style: Theme.of(context).textTheme.bodyMedium,
             )
           else
@@ -484,8 +459,13 @@ class _LowStockPanel extends StatelessWidget {
                               ),
                               Text(
                                 product.category.isEmpty
-                                    ? 'Threshold ${product.lowStockThreshold}'
-                                    : '${product.category} | Threshold ${product.lowStockThreshold}',
+                                    ? strings.t('thresholdOnly', {
+                                        'count': '${product.lowStockThreshold}',
+                                      })
+                                    : strings.t('thresholdWithCategory', {
+                                        'category': product.category,
+                                        'count': '${product.lowStockThreshold}',
+                                      }),
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ],

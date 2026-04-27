@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:red_shop/localization/app_language.dart';
 import 'package:red_shop/providers/auth_provider.dart';
 import 'package:red_shop/screens/auth/register_screen.dart';
 import 'package:red_shop/services/auth_service.dart';
@@ -42,11 +43,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handlePasswordReset() async {
+    final strings = context.readStrings;
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Enter your email first.')));
+      ).showSnackBar(SnackBar(content: Text(strings.t('enterEmailFirst'))));
       return;
     }
 
@@ -57,7 +59,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Password reset email sent to $email.')),
+        SnackBar(
+          content: Text(strings.t('passwordResetSent', {'email': email})),
+        ),
       );
     } catch (error) {
       if (!mounted) {
@@ -80,6 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<ShopAuthProvider>();
+    final strings = context.strings;
 
     return Scaffold(
       body: SafeArea(
@@ -91,6 +96,10 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const Align(
+                    alignment: Alignment.centerRight,
+                    child: LanguageMenuButton(),
+                  ),
                   const SizedBox(height: 12),
                   Icon(
                     Icons.computer,
@@ -99,13 +108,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Red Computer',
+                    strings.t('appName'),
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Shop access',
+                    strings.t('shopLogin'),
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -117,20 +126,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Login',
+                            strings.t('login'),
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const SizedBox(height: 20),
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
+                            decoration: InputDecoration(
+                              labelText: strings.t('email'),
                               prefixIcon: Icon(Icons.alternate_email),
                             ),
                             validator: (value) =>
                                 value == null || !value.contains('@')
-                                ? 'Enter a valid email address.'
+                                ? strings.t('needValidEmail')
                                 : null,
                           ),
                           const SizedBox(height: 16),
@@ -138,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
-                              labelText: 'Password',
+                              labelText: strings.t('password'),
                               prefixIcon: const Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 onPressed: () {
@@ -155,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             validator: (value) =>
                                 value == null || value.length < 6
-                                ? 'Enter your password.'
+                                ? strings.t('enterPassword')
                                 : null,
                           ),
                           const SizedBox(height: 12),
@@ -163,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: _handlePasswordReset,
-                              child: const Text('Forgot password?'),
+                              child: Text(strings.t('forgotPassword')),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -179,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Text('Login'),
+                                : Text(strings.t('login')),
                           ),
                         ],
                       ),
@@ -192,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       final available = snapshot.data ?? false;
                       if (!available) {
                         return Text(
-                          'Owner setup is already complete.',
+                          strings.t('ownerSetupDone'),
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(color: AppTheme.textSecondary),
                           textAlign: TextAlign.center,
@@ -207,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
-                        child: const Text('Create the first owner account'),
+                        child: Text(strings.t('createFirstOwner')),
                       );
                     },
                   ),

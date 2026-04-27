@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:red_shop/localization/app_language.dart';
 import 'package:red_shop/models/models.dart';
 import 'package:red_shop/providers/auth_provider.dart';
 import 'package:red_shop/services/shop_service.dart';
@@ -25,6 +26,7 @@ class _PosScreenState extends State<PosScreen> {
   bool _isSubmitting = false;
 
   void _addToCart(Product product) {
+    final strings = context.readStrings;
     final existingIndex = _cart.indexWhere(
       (entry) => entry.product.id == product.id,
     );
@@ -34,7 +36,9 @@ class _PosScreenState extends State<PosScreen> {
 
     if (currentQuantity >= product.stock) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.name} has no more stock available.')),
+        SnackBar(
+          content: Text(strings.t('noMoreStock', {'name': product.name})),
+        ),
       );
       return;
     }
@@ -57,6 +61,7 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   void _changeQuantity(_CartEntry entry, int delta) {
+    final strings = context.readStrings;
     final nextQuantity = entry.quantity + delta;
     if (nextQuantity <= 0) {
       setState(() {
@@ -69,7 +74,10 @@ class _PosScreenState extends State<PosScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${entry.product.name} only has ${entry.product.stock} units in stock.',
+            strings.t('onlyUnitsLeft', {
+              'name': entry.product.name,
+              'count': '${entry.product.stock}',
+            }),
           ),
         ),
       );
@@ -85,6 +93,7 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   Future<void> _editPrice(_CartEntry entry) async {
+    final strings = context.readStrings;
     final controller = TextEditingController(
       text: entry.unitPrice.toStringAsFixed(2),
     );
@@ -93,17 +102,17 @@ class _PosScreenState extends State<PosScreen> {
     final result = await showDialog<double>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Set price for ${entry.product.name}'),
+        title: Text(strings.t('setPriceFor', {'name': entry.product.name})),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: controller,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Selling price'),
+            decoration: InputDecoration(labelText: strings.t('sellingPrice')),
             validator: (value) {
               final price = double.tryParse(value ?? '');
               if (price == null || price <= 0) {
-                return 'Enter a valid selling price.';
+                return strings.t('validPrice');
               }
 
               return null;
@@ -113,7 +122,7 @@ class _PosScreenState extends State<PosScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(strings.t('cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -121,7 +130,7 @@ class _PosScreenState extends State<PosScreen> {
                 Navigator.of(context).pop(double.parse(controller.text.trim()));
               }
             },
-            child: const Text('Update'),
+            child: Text(strings.t('update')),
           ),
         ],
       ),
@@ -140,6 +149,7 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   Future<void> _checkout(UserModel actor) async {
+    final strings = context.readStrings;
     if (_cart.isEmpty) {
       return;
     }
@@ -168,7 +178,11 @@ class _PosScreenState extends State<PosScreen> {
         _cart.clear();
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sale completed for ${formatCurrency(total)}.')),
+        SnackBar(
+          content: Text(
+            strings.t('saleDoneFor', {'amount': formatCurrency(total)}),
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) {
@@ -188,6 +202,7 @@ class _PosScreenState extends State<PosScreen> {
   @override
   Widget build(BuildContext context) {
     final actor = context.watch<ShopAuthProvider>().userModel;
+    final strings = context.strings;
     final subtotal = _cart.fold<double>(0, (sum, item) => sum + item.lineTotal);
     final estimatedProfit = _cart.fold<double>(
       0,
@@ -218,8 +233,8 @@ class _PosScreenState extends State<PosScreen> {
                 children: [
                   TextField(
                     onChanged: (value) => setState(() => _query = value.trim()),
-                    decoration: const InputDecoration(
-                      hintText: 'Search products',
+                    decoration: InputDecoration(
+                      hintText: strings.t('searchProductShort'),
                       prefixIcon: Icon(Icons.search),
                     ),
                   ),
@@ -229,14 +244,14 @@ class _PosScreenState extends State<PosScreen> {
                       children: [
                         Expanded(
                           child: SummaryRow(
-                            label: 'Cart total',
+                            label: strings.t('cartTotal'),
                             value: formatCurrency(subtotal),
                             emphasize: true,
                           ),
                         ),
                         Expanded(
                           child: SummaryRow(
-                            label: 'Est. profit',
+                            label: strings.t('estimatedProfit'),
                             value: formatCurrency(estimatedProfit),
                             emphasize: true,
                           ),
@@ -255,11 +270,11 @@ class _PosScreenState extends State<PosScreen> {
                       child: EmptyStateView(
                         icon: Icons.point_of_sale_outlined,
                         title: products.isEmpty
-                            ? 'No products available'
-                            : 'No products matched',
+                            ? strings.t('noProductsAvailable')
+                            : strings.t('noProductMatch'),
                         message: products.isEmpty
-                            ? 'Add inventory before opening the POS.'
-                            : 'Try another search term.',
+                            ? strings.t('addInventoryBeforePos')
+                            : strings.t('tryAnotherSearch'),
                       ),
                     )
                   : LayoutBuilder(
@@ -319,7 +334,7 @@ class _PosScreenState extends State<PosScreen> {
                                   const SizedBox(height: 6),
                                   Text(
                                     product.category.isEmpty
-                                        ? 'Uncategorized'
+                                        ? strings.t('uncategorized')
                                         : product.category,
                                     style: Theme.of(
                                       context,
@@ -329,7 +344,11 @@ class _PosScreenState extends State<PosScreen> {
                                   StockBadge(product: product),
                                   const SizedBox(height: 10),
                                   Text(
-                                    'Suggested ${formatCurrency(product.suggestedSellingPrice)}',
+                                    strings.t('suggested', {
+                                      'amount': formatCurrency(
+                                        product.suggestedSellingPrice,
+                                      ),
+                                    }),
                                     style: Theme.of(
                                       context,
                                     ).textTheme.bodyMedium,
@@ -342,7 +361,7 @@ class _PosScreenState extends State<PosScreen> {
                                       onPressed: product.stock > 0
                                           ? () => _addToCart(product)
                                           : null,
-                                      child: const Text('Add to cart'),
+                                      child: Text(strings.t('addToCart')),
                                     ),
                                   ),
                                 ],
@@ -364,12 +383,14 @@ class _PosScreenState extends State<PosScreen> {
                       Row(
                         children: [
                           Text(
-                            'Cart',
+                            strings.t('cart'),
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const Spacer(),
                           Text(
-                            '${_cart.length} item${_cart.length == 1 ? '' : 's'}',
+                            strings.t('itemCountShort', {
+                              'count': '${_cart.length}',
+                            }),
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
@@ -377,7 +398,7 @@ class _PosScreenState extends State<PosScreen> {
                       const SizedBox(height: 12),
                       if (_cart.isEmpty)
                         Text(
-                          'Add products and set sale prices here before checkout.',
+                          strings.t('setPricesBeforeCheckout'),
                           style: Theme.of(context).textTheme.bodyMedium,
                         )
                       else
@@ -468,12 +489,12 @@ class _PosScreenState extends State<PosScreen> {
                         ),
                       const SizedBox(height: 14),
                       SummaryRow(
-                        label: 'Subtotal',
+                        label: strings.t('subtotal'),
                         value: formatCurrency(subtotal),
                         emphasize: true,
                       ),
                       SummaryRow(
-                        label: 'Estimated profit',
+                        label: strings.t('estimatedProfit'),
                         value: formatCurrency(estimatedProfit),
                       ),
                       const SizedBox(height: 14),
@@ -493,7 +514,7 @@ class _PosScreenState extends State<PosScreen> {
                                   ),
                                 )
                               : const Icon(Icons.check_circle_outline),
-                          label: const Text('Checkout'),
+                          label: Text(strings.t('checkout')),
                         ),
                       ),
                     ],
@@ -511,7 +532,10 @@ class _PosScreenState extends State<PosScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: const [LanguageMenuButton()],
+      ),
       body: content,
     );
   }

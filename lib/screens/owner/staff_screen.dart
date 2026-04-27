@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:red_shop/localization/app_language.dart';
 import 'package:red_shop/models/models.dart';
 import 'package:red_shop/providers/auth_provider.dart';
 import 'package:red_shop/services/auth_service.dart';
@@ -18,6 +19,7 @@ class _StaffScreenState extends State<StaffScreen> {
   final ShopService _shopService = ShopService();
 
   Future<void> _showAddStaffDialog() async {
+    final strings = context.readStrings;
     final actor = context.read<ShopAuthProvider>().userModel;
     if (actor == null) {
       return;
@@ -50,18 +52,18 @@ class _StaffScreenState extends State<StaffScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Create staff account',
+                    strings.t('createStaffAccount'),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 18),
                   DropdownButtonFormField<UserRole>(
                     initialValue: role,
-                    decoration: const InputDecoration(labelText: 'Role'),
+                    decoration: InputDecoration(labelText: strings.t('role')),
                     items: UserRole.values
                         .map(
                           (value) => DropdownMenuItem(
                             value: value,
-                            child: Text(userRoleLabel(value)),
+                            child: Text(strings.roleLabel(value)),
                           ),
                         )
                         .toList(),
@@ -74,18 +76,20 @@ class _StaffScreenState extends State<StaffScreen> {
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Full name'),
+                    decoration: InputDecoration(
+                      labelText: strings.t('fullName'),
+                    ),
                     validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Name is required.'
+                        ? strings.t('nameRequired')
                         : null,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(labelText: strings.t('email')),
                     validator: (value) => value == null || !value.contains('@')
-                        ? 'Enter a valid email.'
+                        ? strings.t('needValidEmail')
                         : null,
                   ),
                   const SizedBox(height: 14),
@@ -93,7 +97,7 @@ class _StaffScreenState extends State<StaffScreen> {
                     controller: passwordController,
                     obscureText: obscurePassword,
                     decoration: InputDecoration(
-                      labelText: 'Temporary password',
+                      labelText: strings.t('temporaryPassword'),
                       suffixIcon: IconButton(
                         onPressed: () => setModalState(
                           () => obscurePassword = !obscurePassword,
@@ -106,7 +110,7 @@ class _StaffScreenState extends State<StaffScreen> {
                       ),
                     ),
                     validator: (value) => value == null || value.length < 6
-                        ? 'Use at least 6 characters.'
+                        ? strings.t('minPassword')
                         : null,
                   ),
                   const SizedBox(height: 20),
@@ -137,8 +141,8 @@ class _StaffScreenState extends State<StaffScreen> {
 
                               navigator.pop();
                               messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text('Staff account created.'),
+                                SnackBar(
+                                  content: Text(strings.t('staffCreated')),
                                 ),
                               );
                             } catch (error) {
@@ -158,7 +162,7 @@ class _StaffScreenState extends State<StaffScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Create account'),
+                        : Text(strings.t('createAccount')),
                   ),
                 ],
               ),
@@ -176,9 +180,13 @@ class _StaffScreenState extends State<StaffScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<ShopAuthProvider>().userModel;
+    final strings = context.strings;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Staff')),
+      appBar: AppBar(
+        title: Text(strings.t('staff')),
+        actions: const [LanguageMenuButton()],
+      ),
       body: StreamBuilder<List<UserModel>>(
         stream: _shopService.watchUsers(),
         builder: (context, snapshot) {
@@ -203,7 +211,7 @@ class _StaffScreenState extends State<StaffScreen> {
                         Expanded(
                           child: AppPanel(
                             child: SummaryRow(
-                              label: 'Active users',
+                              label: strings.t('activeUsers'),
                               value: '$activeUsers',
                               emphasize: true,
                             ),
@@ -213,7 +221,7 @@ class _StaffScreenState extends State<StaffScreen> {
                         Expanded(
                           child: AppPanel(
                             child: SummaryRow(
-                              label: 'Owners',
+                              label: strings.t('owners'),
                               value: '$ownerCount',
                               emphasize: true,
                             ),
@@ -222,24 +230,19 @@ class _StaffScreenState extends State<StaffScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const AppPanel(
-                      child: Text(
-                        'Accounts can be activated or disabled here. Full auth deletion still belongs on a trusted backend path if you want hard deletes later.',
-                      ),
-                    ),
+                    AppPanel(child: Text(strings.t('staffNote'))),
                   ],
                 ),
               ),
               const SizedBox(height: 10),
               Expanded(
                 child: users.isEmpty
-                    ? const Padding(
+                    ? Padding(
                         padding: EdgeInsets.all(20),
                         child: EmptyStateView(
                           icon: Icons.group_outlined,
-                          title: 'No staff accounts yet',
-                          message:
-                              'Create a clerk or backup owner account to get started.',
+                          title: strings.t('noStaffYet'),
+                          message: strings.t('staffHelp'),
                         ),
                       )
                     : ListView.separated(
@@ -287,18 +290,18 @@ class _StaffScreenState extends State<StaffScreen> {
                                         children: [
                                           Chip(
                                             label: Text(
-                                              userRoleLabel(user.role),
+                                              strings.roleLabel(user.role),
                                             ),
                                           ),
                                           Chip(
                                             label: Text(
                                               user.active
-                                                  ? 'Active'
-                                                  : 'Disabled',
+                                                  ? strings.t('active')
+                                                  : strings.t('disabled'),
                                             ),
                                           ),
                                           if (isCurrentUser)
-                                            const Chip(label: Text('You')),
+                                            Chip(label: Text(strings.t('you'))),
                                         ],
                                       ),
                                     ],
@@ -333,7 +336,7 @@ class _StaffScreenState extends State<StaffScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddStaffDialog,
         icon: const Icon(Icons.person_add_alt_1_outlined),
-        label: const Text('Staff'),
+        label: Text(strings.t('staffFab')),
       ),
     );
   }
