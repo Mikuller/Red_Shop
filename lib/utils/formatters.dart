@@ -48,6 +48,20 @@ String formatDateTime(DateTime value) {
   return '${formatDate(value)} - $hour:$minute';
 }
 
+String formatDateRange(DateTime start, DateTime endExclusive) {
+  final inclusiveEnd = endExclusive.subtract(const Duration(days: 1));
+  return '${formatDate(start)} - ${formatDate(inclusiveEnd)}';
+}
+
+String formatPercentChange(double value) {
+  final percent = (value * 100).toStringAsFixed(0);
+  if (value > 0) {
+    return '+$percent%';
+  }
+
+  return '$percent%';
+}
+
 String describeError(Object error) {
   if (error is FirebaseAuthException) {
     switch (error.code) {

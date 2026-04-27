@@ -188,6 +188,8 @@ class StockBadge extends StatelessWidget {
       ),
       child: Text(
         '$label | ${product.stock}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(color: color, fontWeight: FontWeight.w700),
       ),
     );
@@ -418,10 +420,161 @@ class SummaryRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
-          Text(value, style: valueStyle),
+          const SizedBox(width: 12),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(value, style: valueStyle),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class BottomDockItemData {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final Color color;
+  final VoidCallback onTap;
+
+  const BottomDockItemData({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.color,
+    required this.onTap,
+  });
+}
+
+class BottomDockBar extends StatelessWidget {
+  final List<BottomDockItemData> items;
+
+  const BottomDockBar({super.key, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppTheme.surface.withAlpha(245),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x38000000),
+            blurRadius: 28,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            for (final item in items)
+              Expanded(
+                child: _BottomDockButton(item: item),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomDockButton extends StatelessWidget {
+  final BottomDockItemData item;
+
+  const _BottomDockButton({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showLabel = item.active || constraints.maxWidth > 62;
+          return Tooltip(
+            message: item.label,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: item.onTap,
+                borderRadius: BorderRadius.circular(20),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: item.active ? 8 : 4,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: item.active
+                        ? item.color.withAlpha(30)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
+                    border: item.active
+                        ? Border.all(color: item.color.withAlpha(90))
+                        : null,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        item.icon,
+                        size: 20,
+                        color: item.active
+                            ? item.color
+                            : AppTheme.textSecondary,
+                      ),
+                      if (showLabel) ...[
+                        const SizedBox(height: 6),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: item.active
+                                      ? AppTheme.textPrimary
+                                      : AppTheme.textSecondary,
+                                  fontWeight: item.active
+                                      ? FontWeight.w700
+                                      : FontWeight.w600,
+                                  fontSize: 10.5,
+                                ),
+                          ),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          height: 4,
+                          width: 4,
+                          decoration: BoxDecoration(
+                            color: AppTheme.textSecondary.withAlpha(120),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

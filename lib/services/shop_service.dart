@@ -124,6 +124,49 @@ class ShopService {
     return controller.stream;
   }
 
+  Stream<ReportSummary> watchReportSummary(ReportRange range) {
+    final controller = StreamController<ReportSummary>();
+    var sales = <SaleRecord>[];
+    var purchases = <PurchaseRecord>[];
+    var expenses = <ExpenseRecord>[];
+
+    void emit() {
+      if (!controller.isClosed) {
+        controller.add(
+          ReportSummary.fromData(
+            range: range,
+            sales: sales,
+            purchases: purchases,
+            expenses: expenses,
+          ),
+        );
+      }
+    }
+
+    final subscriptions = <StreamSubscription<dynamic>>[
+      watchSales().listen((value) {
+        sales = value;
+        emit();
+      }),
+      watchPurchases().listen((value) {
+        purchases = value;
+        emit();
+      }),
+      watchExpenses().listen((value) {
+        expenses = value;
+        emit();
+      }),
+    ];
+
+    controller.onCancel = () async {
+      for (final subscription in subscriptions) {
+        await subscription.cancel();
+      }
+    };
+
+    return controller.stream;
+  }
+
   Future<void> saveProduct(Product product) async {
     final now = DateTime.now();
     final isNew = product.id.isEmpty;
@@ -188,10 +231,10 @@ class ShopService {
 
         final product = Product.fromMap(snapshot.data()!, snapshot.id);
         final newStock = product.stock + item.quantity;
-        final totalExistingValue = product.stock * product.averageCost;
-        final totalIncomingValue = item.quantity * item.unitCost;
-        final newAverageCost =
-            (totalExistingValue + totalIncomingValue) / newStock;
+        final newAverageCost = product.averageCostAfterRestock(
+          addedQuantity: item.quantity,
+          purchaseUnitCost: item.unitCost,
+        );
 
         transaction.update(productRef, {
           'stock': newStock,

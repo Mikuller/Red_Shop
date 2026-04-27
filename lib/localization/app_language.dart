@@ -217,6 +217,18 @@ class AppLocalizer {
       AppLanguage.english: 'Quick actions',
       AppLanguage.amharic: 'ፈጣን ስራዎች',
     },
+    'dockHome': {
+      AppLanguage.english: 'Home',
+      AppLanguage.amharic: 'መነሻ',
+    },
+    'dockStock': {
+      AppLanguage.english: 'Stock',
+      AppLanguage.amharic: 'እቃ',
+    },
+    'dockMore': {
+      AppLanguage.english: 'More',
+      AppLanguage.amharic: 'ተጨማሪ',
+    },
     'inventory': {
       AppLanguage.english: 'Inventory',
       AppLanguage.amharic: 'እቃ ዝርዝር',
@@ -233,6 +245,15 @@ class AppLocalizer {
       AppLanguage.english: 'Record new stock',
       AppLanguage.amharic: 'አዲስ እቃ መዝግብ',
     },
+    'stockWorkspace': {
+      AppLanguage.english: 'Stock workspace',
+      AppLanguage.amharic: 'የእቃ መስሪያ',
+    },
+    'stockWorkspaceHint': {
+      AppLanguage.english:
+          'Open inventory or record a fresh restock from one place.',
+      AppLanguage.amharic: 'እቃ ዝርዝርን ይክፈቱ ወይም አዲስ መሙላት ከአንድ ቦታ ይመዝግቡ።',
+    },
     'pos': {AppLanguage.english: 'POS', AppLanguage.amharic: 'POS'},
     'startSale': {
       AppLanguage.english: 'Start a sale',
@@ -244,6 +265,67 @@ class AppLocalizer {
       AppLanguage.amharic: 'ወጪና የተወሰደ ገንዘብ ተከታተል',
     },
     'reports': {AppLanguage.english: 'Reports', AppLanguage.amharic: 'ሪፖርቶች'},
+    'reportRange': {
+      AppLanguage.english: 'Report range',
+      AppLanguage.amharic: 'የሪፖርት ጊዜ',
+    },
+    'daily': {
+      AppLanguage.english: 'Daily',
+      AppLanguage.amharic: 'የቀን',
+    },
+    'weekly': {
+      AppLanguage.english: 'Weekly',
+      AppLanguage.amharic: 'የሳምንት',
+    },
+    'monthly': {
+      AppLanguage.english: 'Monthly',
+      AppLanguage.amharic: 'ወርሃዊ',
+    },
+    'customRange': {
+      AppLanguage.english: 'Custom',
+      AppLanguage.amharic: 'ልዩ',
+    },
+    'pickDates': {
+      AppLanguage.english: 'Pick dates',
+      AppLanguage.amharic: 'ቀን ምረጥ',
+    },
+    'noDataInRange': {
+      AppLanguage.english:
+          'No sales, purchases, or expenses were recorded in this range yet.',
+      AppLanguage.amharic: 'በዚህ ጊዜ ውስጥ ሽያጭ፣ ግዢ ወይም ወጪ ገና አልተመዘገበም።',
+    },
+    'vsPreviousPeriod': {
+      AppLanguage.english: 'Vs previous: {value}',
+      AppLanguage.amharic: 'ከቀደም ጊዜ ጋር: {value}',
+    },
+    'periodSummary': {
+      AppLanguage.english: 'Period summary',
+      AppLanguage.amharic: 'የጊዜ ማጠቃለያ',
+    },
+    'salesCountLabel': {
+      AppLanguage.english: 'Sales made',
+      AppLanguage.amharic: 'የተደረጉ ሽያጮች',
+    },
+    'purchaseCountLabel': {
+      AppLanguage.english: 'Restocks logged',
+      AppLanguage.amharic: 'የተመዘገቡ መሙላቶች',
+    },
+    'expenseCountLabel': {
+      AppLanguage.english: 'Expense records',
+      AppLanguage.amharic: 'የወጪ መዝገቦች',
+    },
+    'unitsSold': {
+      AppLanguage.english: 'Units sold',
+      AppLanguage.amharic: 'የተሸጡ እቃዎች',
+    },
+    'expenseBreakdown': {
+      AppLanguage.english: 'Expense breakdown',
+      AppLanguage.amharic: 'የወጪ ዝርዝር',
+    },
+    'expenseEntriesCount': {
+      AppLanguage.english: '{count} entries',
+      AppLanguage.amharic: '{count} መዝገቦች',
+    },
     'profitAndBestSellers': {
       AppLanguage.english: 'Profit and top items',
       AppLanguage.amharic: 'ትርፍ እና ብዙ የሚሸጡ እቃዎች',
@@ -252,6 +334,14 @@ class AppLocalizer {
     'createManageAccess': {
       AppLanguage.english: 'Create and manage access',
       AppLanguage.amharic: 'መለያ ፍጠር እና አስተዳድር',
+    },
+    'moreActions': {
+      AppLanguage.english: 'More actions',
+      AppLanguage.amharic: 'ተጨማሪ እርምጃዎች',
+    },
+    'safeSignOutHint': {
+      AppLanguage.english: 'Leave this account safely when the shift is done.',
+      AppLanguage.amharic: 'ሺፍቱ ሲያልቅ ከዚህ መለያ በደህና ውጡ።',
     },
     'topSellers': {
       AppLanguage.english: 'Top sellers',
@@ -493,6 +583,10 @@ class AppLocalizer {
       AppLanguage.english: 'Search products',
       AppLanguage.amharic: 'እቃ ፈልግ',
     },
+    'products': {
+      AppLanguage.english: 'Products',
+      AppLanguage.amharic: 'እቃዎች',
+    },
     'cartTotal': {
       AppLanguage.english: 'Cart total',
       AppLanguage.amharic: 'የጋሪ ድምር',
@@ -522,6 +616,10 @@ class AppLocalizer {
       AppLanguage.amharic: 'ወደ ጋሪ ጨምር',
     },
     'cart': {AppLanguage.english: 'Cart', AppLanguage.amharic: 'ጋሪ'},
+    'viewCart': {
+      AppLanguage.english: 'View cart',
+      AppLanguage.amharic: 'ጋሪውን ይዩ',
+    },
     'itemCountShort': {
       AppLanguage.english: '{count} item(s)',
       AppLanguage.amharic: '{count} እቃ',
