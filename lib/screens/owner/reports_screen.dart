@@ -6,6 +6,8 @@ import 'package:red_shop/theme/app_theme.dart';
 import 'package:red_shop/utils/formatters.dart';
 import 'package:red_shop/widgets/shop_widgets.dart';
 
+enum _ReportSourceFilter { all, pos, fastMoney, services }
+
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
@@ -16,6 +18,7 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   final ShopService _shopService = ShopService();
   late ReportRange _range;
+  _ReportSourceFilter _sourceFilter = _ReportSourceFilter.all;
 
   @override
   void initState() {
@@ -75,7 +78,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
           final hasActivity =
               summary.salesCount > 0 ||
               summary.purchaseCount > 0 ||
-              summary.expenseCount > 0;
+              summary.expenseCount > 0 ||
+              summary.serviceCount > 0;
 
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -204,6 +208,64 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
+                            strings.t('incomeSource'),
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final filter in _ReportSourceFilter.values)
+                                ChoiceChip(
+                                  label: Text(_sourceFilterLabel(strings, filter)),
+                                  selected: _sourceFilter == filter,
+                                  onSelected: (_) {
+                                    setState(() => _sourceFilter = filter);
+                                  },
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    if (wide)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _SourceSummaryPanel(
+                              summary: summary,
+                              filter: _sourceFilter,
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            child: _RecentIncomeActivityPanel(
+                              summary: summary,
+                              filter: _sourceFilter,
+                            ),
+                          ),
+                        ],
+                      )
+                    else ...[
+                      _SourceSummaryPanel(
+                        summary: summary,
+                        filter: _sourceFilter,
+                      ),
+                      const SizedBox(height: 18),
+                      _RecentIncomeActivityPanel(
+                        summary: summary,
+                        filter: _sourceFilter,
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    AppPanel(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             strings.t('bestSellingItems'),
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
@@ -220,32 +282,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                     '${item.productName} | ${item.quantitySold} ${strings.t('pcs')}',
                                 value: formatCurrency(item.revenue),
                                 emphasize: true,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    AppPanel(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            strings.t('recentSales'),
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 12),
-                          if (summary.recentSales.isEmpty)
-                            Text(
-                              strings.t('noSalesYet'),
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            )
-                          else
-                            ...summary.recentSales.map(
-                              (sale) => SummaryRow(
-                                label:
-                                    '${formatDateTime(sale.createdAt)} | ${sale.processedByName.isEmpty ? strings.t('saleFallback') : sale.processedByName}',
-                                value: formatCurrency(sale.totalRevenue),
                               ),
                             ),
                         ],
@@ -319,6 +355,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ReportPreset.weekly => strings.t('weekly'),
       ReportPreset.monthly => strings.t('monthly'),
       ReportPreset.custom => strings.t('customRange'),
+    };
+  }
+
+  String _sourceFilterLabel(
+    AppLocalizer strings,
+    _ReportSourceFilter filter,
+  ) {
+    return switch (filter) {
+      _ReportSourceFilter.all => strings.t('all'),
+      _ReportSourceFilter.pos => strings.t('pos'),
+      _ReportSourceFilter.fastMoney => strings.t('fastMoney'),
+      _ReportSourceFilter.services => strings.t('services'),
     };
   }
 }
@@ -412,8 +460,28 @@ class _SummaryPanel extends StatelessWidget {
             emphasize: true,
           ),
           SummaryRow(
+            label: strings.t('fastMoneySalesLabel'),
+            value: '${summary.fastMoneyCount}',
+          ),
+          SummaryRow(
             label: strings.t('unitsSold'),
             value: '${summary.unitsSold}',
+          ),
+          SummaryRow(
+            label: strings.t('serviceCountLabel'),
+            value: '${summary.serviceCount}',
+          ),
+          SummaryRow(
+            label: strings.t('serviceChargeTotal'),
+            value: formatCurrency(summary.serviceChargeTotal),
+          ),
+          SummaryRow(
+            label: strings.t('paidServiceIncome'),
+            value: formatCurrency(summary.paidServiceIncome),
+          ),
+          SummaryRow(
+            label: strings.t('unpaidServiceIncome'),
+            value: formatCurrency(summary.unpaidServiceIncome),
           ),
           SummaryRow(
             label: strings.t('purchaseCountLabel'),
@@ -471,4 +539,176 @@ class _ExpenseBreakdownPanel extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SourceSummaryPanel extends StatelessWidget {
+  final ReportSummary summary;
+  final _ReportSourceFilter filter;
+
+  const _SourceSummaryPanel({
+    required this.summary,
+    required this.filter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    final countLabel = switch (filter) {
+      _ReportSourceFilter.all => strings.t('incomeEntries'),
+      _ReportSourceFilter.pos => strings.t('salesCountLabel'),
+      _ReportSourceFilter.fastMoney => strings.t('fastMoneySalesLabel'),
+      _ReportSourceFilter.services => strings.t('serviceCountLabel'),
+    };
+    final countValue = switch (filter) {
+      _ReportSourceFilter.all => summary.salesCount + summary.serviceCount,
+      _ReportSourceFilter.pos => summary.salesCount - summary.fastMoneyCount,
+      _ReportSourceFilter.fastMoney => summary.fastMoneyCount,
+      _ReportSourceFilter.services => summary.serviceCount,
+    };
+    final incomeValue = switch (filter) {
+      _ReportSourceFilter.all => summary.revenueTrend.current,
+      _ReportSourceFilter.pos => summary.posSalesRevenue,
+      _ReportSourceFilter.fastMoney => summary.fastMoneyRevenue,
+      _ReportSourceFilter.services => summary.serviceChargeTotal,
+    };
+    final profitValue = switch (filter) {
+      _ReportSourceFilter.all => summary.grossProfitTrend.current,
+      _ReportSourceFilter.pos => summary.posSalesProfit,
+      _ReportSourceFilter.fastMoney => summary.fastMoneyProfit,
+      _ReportSourceFilter.services => summary.serviceNetIncomeTotal,
+    };
+
+    return AppPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.t('incomeSourceSummary'),
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          SummaryRow(
+            label: countLabel,
+            value: '$countValue',
+            emphasize: true,
+          ),
+          SummaryRow(
+            label: strings.t('moneyIn'),
+            value: formatCurrency(incomeValue),
+          ),
+          SummaryRow(
+            label: strings.t('grossProfit'),
+            value: formatCurrency(profitValue),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentIncomeActivityPanel extends StatelessWidget {
+  final ReportSummary summary;
+  final _ReportSourceFilter filter;
+
+  const _RecentIncomeActivityPanel({
+    required this.summary,
+    required this.filter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    final activities = _buildActivities(strings);
+
+    return AppPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.t('recentIncomeActivity'),
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          if (activities.isEmpty)
+            Text(
+              strings.t('noIncomeActivityYet'),
+              style: Theme.of(context).textTheme.bodyMedium,
+            )
+          else
+            ...activities.map(
+              (activity) => SummaryRow(
+                label: '${activity.title} | ${activity.subtitle}',
+                value: formatCurrency(activity.amount),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<_IncomeActivityItem> _buildActivities(AppLocalizer strings) {
+    final posItems = summary.recentPosSales
+        .map(
+          (sale) => _IncomeActivityItem(
+            title: sale.primaryName.isEmpty
+                ? strings.t('saleFallback')
+                : sale.primaryName,
+            subtitle: '${strings.t('pos')} | ${formatDateTime(sale.createdAt)}',
+            amount: sale.totalRevenue,
+            createdAt: sale.createdAt,
+          ),
+        )
+        .toList();
+    final fastMoneyItems = summary.recentFastMoneySales
+        .map(
+          (sale) => _IncomeActivityItem(
+            title: sale.primaryName.isEmpty
+                ? strings.t('fastMoney')
+                : sale.primaryName,
+            subtitle:
+                '${strings.t('fastMoney')} | ${formatDateTime(sale.createdAt)}',
+            amount: sale.totalRevenue,
+            createdAt: sale.createdAt,
+          ),
+        )
+        .toList();
+    final serviceItems = summary.recentServices
+        .map(
+          (service) => _IncomeActivityItem(
+            title: service.serviceType,
+            subtitle:
+                '${service.customerName} | ${formatDateTime(service.createdAt)}',
+            amount: service.serviceCharge,
+            createdAt: service.createdAt,
+          ),
+        )
+        .toList();
+
+    final items = switch (filter) {
+      _ReportSourceFilter.all => [
+          ...posItems,
+          ...fastMoneyItems,
+          ...serviceItems,
+        ],
+      _ReportSourceFilter.pos => posItems,
+      _ReportSourceFilter.fastMoney => fastMoneyItems,
+      _ReportSourceFilter.services => serviceItems,
+    }..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return items.take(5).toList();
+  }
+}
+
+class _IncomeActivityItem {
+  final String title;
+  final String subtitle;
+  final double amount;
+  final DateTime createdAt;
+
+  const _IncomeActivityItem({
+    required this.title,
+    required this.subtitle,
+    required this.amount,
+    required this.createdAt,
+  });
 }

@@ -14,6 +14,8 @@ class ShopService {
       _db.collection('purchases');
   CollectionReference<Map<String, dynamic>> get _expenses =>
       _db.collection('expenses');
+  CollectionReference<Map<String, dynamic>> get _services =>
+      _db.collection('services');
   CollectionReference<Map<String, dynamic>> get _users =>
       _db.collection('users');
 
@@ -39,6 +41,12 @@ class ShopService {
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return sales;
     });
+  }
+
+  Stream<List<SaleRecord>> watchInstantSales() {
+    return watchSales().map(
+      (sales) => sales.where((sale) => sale.isInstantSale).toList(),
+    );
   }
 
   Stream<List<PurchaseRecord>> watchPurchases() {
@@ -76,12 +84,24 @@ class ShopService {
     });
   }
 
+  Stream<List<ServiceRecord>> watchServices() {
+    return _services.snapshots().map((snapshot) {
+      final services =
+          snapshot.docs
+              .map((doc) => ServiceRecord.fromMap(doc.data(), doc.id))
+              .toList()
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return services;
+    });
+  }
+
   Stream<DashboardSummary> watchDashboardSummary() {
     final controller = StreamController<DashboardSummary>();
     var products = <Product>[];
     var sales = <SaleRecord>[];
     var purchases = <PurchaseRecord>[];
     var expenses = <ExpenseRecord>[];
+    var services = <ServiceRecord>[];
 
     void emit() {
       if (!controller.isClosed) {
@@ -91,6 +111,7 @@ class ShopService {
             sales: sales,
             purchases: purchases,
             expenses: expenses,
+            services: services,
           ),
         );
       }
@@ -113,6 +134,10 @@ class ShopService {
         expenses = value;
         emit();
       }),
+      watchServices().listen((value) {
+        services = value;
+        emit();
+      }),
     ];
 
     controller.onCancel = () async {
@@ -129,6 +154,7 @@ class ShopService {
     var sales = <SaleRecord>[];
     var purchases = <PurchaseRecord>[];
     var expenses = <ExpenseRecord>[];
+    var services = <ServiceRecord>[];
 
     void emit() {
       if (!controller.isClosed) {
@@ -138,6 +164,7 @@ class ShopService {
             sales: sales,
             purchases: purchases,
             expenses: expenses,
+            services: services,
           ),
         );
       }
@@ -154,6 +181,10 @@ class ShopService {
       }),
       watchExpenses().listen((value) {
         expenses = value;
+        emit();
+      }),
+      watchServices().listen((value) {
+        services = value;
         emit();
       }),
     ];
@@ -342,12 +373,57 @@ class ShopService {
           totalRevenue: totalRevenue,
           totalCost: totalCost,
           grossProfit: totalRevenue - totalCost,
+          channel: SaleChannel.pos,
           createdAt: now,
           processedByUid: actor.uid,
           processedByName: actor.name,
         ).toMap(),
       );
     });
+  }
+
+  Future<void> recordInstantSale({
+    required String itemName,
+    required double income,
+    required double cost,
+    required UserModel actor,
+  }) async {
+    if (itemName.trim().isEmpty) {
+      throw StateError('Product or service name is required.');
+    }
+
+    if (income <= 0) {
+      throw StateError('Income must be greater than zero.');
+    }
+
+    if (cost < 0) {
+      throw StateError('Cost cannot be negative.');
+    }
+
+    final normalizedName = itemName.trim();
+    final saleRef = _sales.doc();
+    final now = DateTime.now();
+    final item = SaleItem(
+      productId: 'instant:${_normalizeInstantSaleKey(normalizedName)}',
+      productName: normalizedName,
+      quantity: 1,
+      unitPrice: income,
+      costPrice: cost,
+    );
+
+    await saleRef.set(
+      SaleRecord(
+        id: saleRef.id,
+        items: [item],
+        totalRevenue: income,
+        totalCost: cost,
+        grossProfit: income - cost,
+        channel: SaleChannel.instant,
+        createdAt: now,
+        processedByUid: actor.uid,
+        processedByName: actor.name,
+      ).toMap(),
+    );
   }
 
   Future<void> addExpense({
@@ -373,6 +449,78 @@ class ShopService {
         createdByName: actor.name,
       ).toMap(),
     );
+  }
+
+  Future<void> createService(ServiceRecord service) async {
+    if (service.serviceType.trim().isEmpty) {
+      throw StateError('Service type is required.');
+    }
+
+    if (service.customerName.trim().isEmpty) {
+      throw StateError('Customer name is required.');
+    }
+
+    if (service.customerPhone.trim().isEmpty) {
+      throw StateError('Customer phone is required.');
+    }
+
+    if (service.serviceCharge < 0) {
+      throw StateError('Service income cannot be negative.');
+    }
+
+    if (service.cashCost < 0) {
+      throw StateError('Cash cost cannot be negative.');
+    }
+
+    final now = DateTime.now();
+    final serviceRef = _services.doc();
+
+    await _db.runTransaction((transaction) async {
+      var savedService = service.copyWith(
+        id: serviceRef.id,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      if (service.sparePartProductId.trim().isNotEmpty &&
+          service.sparePartQuantity > 0) {
+        final productRef = _products.doc(service.sparePartProductId);
+        final snapshot = await transaction.get(productRef);
+
+        if (!snapshot.exists || snapshot.data() == null) {
+          throw StateError('The selected spare part no longer exists.');
+        }
+
+        final product = Product.fromMap(snapshot.data()!, snapshot.id);
+        if (product.stock < service.sparePartQuantity) {
+          throw StateError(
+            '${product.name} only has ${product.stock} units left in stock.',
+          );
+        }
+
+        transaction.update(productRef, {
+          'stock': product.stock - service.sparePartQuantity,
+          'updatedAt': now,
+        });
+
+        savedService = savedService.copyWith(
+          sparePartProductName: product.name,
+          sparePartUnitCost: product.averageCost,
+        );
+      }
+
+      transaction.set(serviceRef, savedService.toMap());
+    });
+  }
+
+  Future<void> updateServiceStatus(
+    String serviceId,
+    ServiceStatus status,
+  ) async {
+    await _services.doc(serviceId).update({
+      'status': status.name,
+      'updatedAt': DateTime.now(),
+    });
   }
 
   Future<void> deleteExpense(String expenseId) async {
@@ -429,5 +577,14 @@ class ShopService {
     }
 
     return merged.values.toList();
+  }
+
+  String _normalizeInstantSaleKey(String value) {
+    final sanitized = value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), '-')
+        .replaceAll(RegExp(r'[^a-z0-9\-]'), '');
+    return sanitized.isEmpty ? 'manual-sale' : sanitized;
   }
 }

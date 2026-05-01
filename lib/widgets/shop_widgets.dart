@@ -441,6 +441,55 @@ class SummaryRow extends StatelessWidget {
   }
 }
 
+class CategoryFilterBar extends StatelessWidget {
+  final List<String> categories;
+  final String? selectedCategory;
+  final String allLabel;
+  final String uncategorizedLabel;
+  final ValueChanged<String?> onSelected;
+
+  const CategoryFilterBar({
+    super.key,
+    required this.categories,
+    required this.selectedCategory,
+    required this.allLabel,
+    required this.uncategorizedLabel,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <Widget>[
+      Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: FilterChip(
+          label: Text(allLabel),
+          selected: selectedCategory == null,
+          onSelected: (_) => onSelected(null),
+        ),
+      ),
+      ...categories.map(
+        (category) => Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: FilterChip(
+            label: Text(
+              category.isEmpty ? uncategorizedLabel : category,
+              overflow: TextOverflow.ellipsis,
+            ),
+            selected: selectedCategory == category,
+            onSelected: (_) => onSelected(category),
+          ),
+        ),
+      ),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(children: chips),
+    );
+  }
+}
+
 class BottomDockItemData {
   final IconData icon;
   final String label;

@@ -7,8 +7,10 @@ import 'package:red_shop/screens/owner/expense_screen.dart';
 import 'package:red_shop/screens/owner/inventory_screen.dart';
 import 'package:red_shop/screens/owner/reports_screen.dart';
 import 'package:red_shop/screens/owner/restock_screen.dart';
+import 'package:red_shop/screens/owner/service_screen.dart';
 import 'package:red_shop/screens/owner/staff_screen.dart';
 import 'package:red_shop/screens/pos/pos_screen.dart';
+import 'package:red_shop/screens/shared/fast_money_screen.dart';
 import 'package:red_shop/services/shop_service.dart';
 import 'package:red_shop/theme/app_theme.dart';
 import 'package:red_shop/utils/formatters.dart';
@@ -157,6 +159,17 @@ class _OwnerHomeState extends State<OwnerHome> {
                 onTap: () {
                   Navigator.of(context).pop();
                   _openScreen(const ExpenseScreen());
+                },
+              ),
+              const SizedBox(height: 12),
+              _SheetActionTile(
+                icon: Icons.build_circle_outlined,
+                color: const Color(0xFF6FA8FF),
+                title: strings.t('services'),
+                subtitle: strings.t('serviceShortHint'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _openScreen(const ServiceScreen());
                 },
               ),
               const SizedBox(height: 12),
@@ -484,6 +497,19 @@ class _HeroCard extends StatelessWidget {
               'amount': formatCurrency(summary.todayRevenue),
             }),
             style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FastMoneyScreen()),
+                );
+              },
+              icon: const Icon(Icons.flash_on_rounded),
+              label: Text(strings.t('fastMoney')),
+            ),
           ),
           const SizedBox(height: 20),
           Wrap(

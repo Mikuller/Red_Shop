@@ -19,6 +19,7 @@ class InventoryScreen extends StatefulWidget {
 class _InventoryScreenState extends State<InventoryScreen> {
   final ShopService _shopService = ShopService();
   String _query = '';
+  String? _selectedCategory;
   bool _showLowStockOnly = false;
 
   @override
@@ -27,11 +28,75 @@ class _InventoryScreenState extends State<InventoryScreen> {
     _showLowStockOnly = widget.startLowStockOnly;
   }
 
+  Future<String?> _showCategoryDialog(
+    List<String> existingCategories, {
+    String initialValue = '',
+  }) async {
+    final strings = context.readStrings;
+    final controller = TextEditingController(text: initialValue);
+    final formKey = GlobalKey<FormState>();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(strings.t('addCategory')),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(labelText: strings.t('category')),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return strings.t('categoryRequired');
+              }
+
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(strings.t('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (!formKey.currentState!.validate()) {
+                return;
+              }
+
+              final trimmed = controller.text.trim();
+              final existing = existingCategories.where(
+                (category) => category.toLowerCase() == trimmed.toLowerCase(),
+              );
+              Navigator.of(
+                context,
+              ).pop(existing.isEmpty ? trimmed : existing.first);
+            },
+            child: Text(strings.t('saveCategory')),
+          ),
+        ],
+      ),
+    );
+    return result;
+  }
+
   Future<void> _showProductForm([Product? product]) async {
     final strings = context.readStrings;
+    final catalog = await _shopService.watchProducts().first;
+    if (!mounted) {
+      return;
+    }
+
+    final availableCategories = collectProductCategories(
+      catalog,
+      extra: [if (product != null) product.category],
+    );
+    String? selectedCategory = product?.category.trim().isEmpty ?? true
+        ? null
+        : product!.category.trim();
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: product?.name);
-    final categoryController = TextEditingController(text: product?.category);
     final skuController = TextEditingController(text: product?.sku);
     final priceController = TextEditingController(
       text: product == null
@@ -84,11 +149,89 @@ class _InventoryScreenState extends State<InventoryScreen> {
                           : null,
                     ),
                     const SizedBox(height: 14),
-                    TextFormField(
-                      controller: categoryController,
-                      decoration: InputDecoration(
-                        labelText: strings.t('category'),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: selectedCategory,
+                            decoration: InputDecoration(
+                              labelText: strings.t('category'),
+                              hintText: strings.t('chooseCategory'),
+                            ),
+                            items: availableCategories
+                                .map(
+                                  (category) => DropdownMenuItem(
+                                    value: category,
+                                    child: Text(category),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              setModalState(() => selectedCategory = value);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: IconButton.filledTonal(
+                            tooltip: strings.t('addCategory'),
+                            onPressed: () async {
+                              final newCategory = await _showCategoryDialog(
+                                availableCategories,
+                              );
+                              if (newCategory == null || !mounted) {
+                                return;
+                              }
+
+                              setModalState(() {
+                                if (!availableCategories.any(
+                                  (category) =>
+                                      category.toLowerCase() ==
+                                      newCategory.toLowerCase(),
+                                )) {
+                                  availableCategories.add(newCategory);
+                                  availableCategories.sort(
+                                    (a, b) => a.toLowerCase().compareTo(
+                                      b.toLowerCase(),
+                                    ),
+                                  );
+                                }
+                                selectedCategory = availableCategories.firstWhere(
+                                  (category) =>
+                                      category.toLowerCase() ==
+                                      newCategory.toLowerCase(),
+                                );
+                              });
+                            },
+                            icon: const Icon(Icons.add),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (selectedCategory != null) ...[
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            setModalState(() => selectedCategory = null);
+                          },
+                          child: Text(strings.t('clearCategory')),
+                        ),
                       ),
+                    ] else ...[
+                      const SizedBox(height: 14),
+                    ],
+                    if (selectedCategory != null) const SizedBox(height: 6),
+                    Text(
+                      selectedCategory == null
+                          ? strings.t('categoryOptional')
+                          : strings.t('categorySelected', {
+                              'name': selectedCategory!,
+                            }),
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -206,7 +349,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
                               final updated = current.copyWith(
                                 name: nameController.text.trim(),
-                                category: categoryController.text.trim(),
+                                category: selectedCategory?.trim() ?? '',
                                 sku: skuController.text.trim(),
                                 description: descriptionController.text.trim(),
                                 imageUrl: imageController.text.trim(),
@@ -324,6 +467,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
+    final compact = MediaQuery.sizeOf(context).width < 420;
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.t('inventory')),
@@ -344,14 +488,24 @@ class _InventoryScreenState extends State<InventoryScreen> {
           }
 
           final products = snapshot.data ?? <Product>[];
+          final categoryOptions = collectProductCategories(
+            products,
+            includeUncategorized: true,
+          );
           final filtered = products.where((product) {
             final matchesQuery =
                 _query.isEmpty ||
                 product.name.toLowerCase().contains(_query.toLowerCase()) ||
                 product.category.toLowerCase().contains(_query.toLowerCase()) ||
                 product.sku.toLowerCase().contains(_query.toLowerCase());
+            final matchesCategory = _selectedCategory == null
+                ? true
+                : _selectedCategory!.isEmpty
+                ? product.category.trim().isEmpty
+                : product.category.toLowerCase() ==
+                      _selectedCategory!.toLowerCase();
             final matchesStock = !_showLowStockOnly || product.isLowStock;
-            return matchesQuery && matchesStock;
+            return matchesQuery && matchesCategory && matchesStock;
           }).toList();
           final inventoryValue = filtered.fold<double>(
             0,
@@ -377,47 +531,99 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        FilterChip(
-                          label: Text(strings.t('lowStockOnly')),
-                          selected: _showLowStockOnly,
-                          onSelected: (selected) =>
-                              setState(() => _showLowStockOnly = selected),
-                        ),
-                        const Spacer(),
-                        Text(
-                          strings.t('productCount', {
-                            'count': '${filtered.length}',
-                          }),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
+                    CategoryFilterBar(
+                      categories: categoryOptions,
+                      selectedCategory: _selectedCategory,
+                      allLabel: strings.t('allCategories'),
+                      uncategorizedLabel: strings.t('uncategorized'),
+                      onSelected: (value) {
+                        setState(() => _selectedCategory = value);
+                      },
                     ),
+                    const SizedBox(height: 12),
+                    compact
+                        ? Wrap(
+                            spacing: 12,
+                            runSpacing: 10,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              FilterChip(
+                                label: Text(strings.t('lowStockOnly')),
+                                selected: _showLowStockOnly,
+                                onSelected: (selected) => setState(
+                                  () => _showLowStockOnly = selected,
+                                ),
+                              ),
+                              Text(
+                                strings.t('productCount', {
+                                  'count': '${filtered.length}',
+                                }),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              FilterChip(
+                                label: Text(strings.t('lowStockOnly')),
+                                selected: _showLowStockOnly,
+                                onSelected: (selected) => setState(
+                                  () => _showLowStockOnly = selected,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                strings.t('productCount', {
+                                  'count': '${filtered.length}',
+                                }),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
                     const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppPanel(
-                            child: SummaryRow(
-                              label: strings.t('unitsInStock'),
-                              value: '$units',
-                              emphasize: true,
-                            ),
+                    compact
+                        ? Column(
+                            children: [
+                              AppPanel(
+                                child: SummaryRow(
+                                  label: strings.t('unitsInStock'),
+                                  value: '$units',
+                                  emphasize: true,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              AppPanel(
+                                child: SummaryRow(
+                                  label: strings.t('stockValue'),
+                                  value: formatCurrency(inventoryValue),
+                                  emphasize: true,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: AppPanel(
+                                  child: SummaryRow(
+                                    label: strings.t('unitsInStock'),
+                                    value: '$units',
+                                    emphasize: true,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppPanel(
+                                  child: SummaryRow(
+                                    label: strings.t('stockValue'),
+                                    value: formatCurrency(inventoryValue),
+                                    emphasize: true,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppPanel(
-                            child: SummaryRow(
-                              label: strings.t('stockValue'),
-                              value: formatCurrency(inventoryValue),
-                              emphasize: true,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),

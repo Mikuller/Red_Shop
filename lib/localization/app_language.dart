@@ -260,6 +260,15 @@ class AppLocalizer {
       AppLanguage.amharic: 'ሽያጭ ጀምር',
     },
     'expenses': {AppLanguage.english: 'Expenses', AppLanguage.amharic: 'ወጪዎች'},
+    'fastMoney': {
+      AppLanguage.english: 'Fast money',
+      AppLanguage.amharic: 'ፈጣን ገቢ',
+    },
+    'fastMoneyHint': {
+      AppLanguage.english:
+          'Quickly record one-off product or service money here.',
+      AppLanguage.amharic: 'የአንድ ጊዜ የእቃ ወይም የአገልግሎት ገቢን በፍጥነት ይመዝግቡ።',
+    },
     'trackSpendAndWithdrawals': {
       AppLanguage.english: 'Track costs and take-outs',
       AppLanguage.amharic: 'ወጪና የተወሰደ ገንዘብ ተከታተል',
@@ -268,6 +277,14 @@ class AppLocalizer {
     'reportRange': {
       AppLanguage.english: 'Report range',
       AppLanguage.amharic: 'የሪፖርት ጊዜ',
+    },
+    'all': {
+      AppLanguage.english: 'All',
+      AppLanguage.amharic: 'ሁሉም',
+    },
+    'incomeSource': {
+      AppLanguage.english: 'Income source',
+      AppLanguage.amharic: 'የገቢ ምንጭ',
     },
     'daily': {
       AppLanguage.english: 'Daily',
@@ -302,6 +319,14 @@ class AppLocalizer {
       AppLanguage.english: 'Period summary',
       AppLanguage.amharic: 'የጊዜ ማጠቃለያ',
     },
+    'incomeSourceSummary': {
+      AppLanguage.english: 'Source summary',
+      AppLanguage.amharic: 'የምንጭ ማጠቃለያ',
+    },
+    'incomeEntries': {
+      AppLanguage.english: 'Income entries',
+      AppLanguage.amharic: 'የገቢ መዝገቦች',
+    },
     'salesCountLabel': {
       AppLanguage.english: 'Sales made',
       AppLanguage.amharic: 'የተደረጉ ሽያጮች',
@@ -313,6 +338,26 @@ class AppLocalizer {
     'expenseCountLabel': {
       AppLanguage.english: 'Expense records',
       AppLanguage.amharic: 'የወጪ መዝገቦች',
+    },
+    'serviceCountLabel': {
+      AppLanguage.english: 'Service jobs',
+      AppLanguage.amharic: 'የአገልግሎት ስራዎች',
+    },
+    'fastMoneySalesLabel': {
+      AppLanguage.english: 'Fast money sales',
+      AppLanguage.amharic: 'የፈጣን ገቢ ሽያጮች',
+    },
+    'serviceChargeTotal': {
+      AppLanguage.english: 'Service charges',
+      AppLanguage.amharic: 'የአገልግሎት ክፍያዎች',
+    },
+    'paidServiceIncome': {
+      AppLanguage.english: 'Paid service income',
+      AppLanguage.amharic: 'የተከፈለ የአገልግሎት ገቢ',
+    },
+    'unpaidServiceIncome': {
+      AppLanguage.english: 'Unpaid service income',
+      AppLanguage.amharic: 'ያልተከፈለ የአገልግሎት ገቢ',
     },
     'unitsSold': {
       AppLanguage.english: 'Units sold',
@@ -408,9 +453,17 @@ class AppLocalizer {
       AppLanguage.amharic: 'ብዙ የሚሸጡ እቃዎች ከተጨማሪ ሽያጭ በኋላ እዚህ ይታያሉ።',
     },
     'pcs': {AppLanguage.english: 'pcs', AppLanguage.amharic: 'ቁ'},
+    'recentIncomeActivity': {
+      AppLanguage.english: 'Recent income activity',
+      AppLanguage.amharic: 'የቅርብ የገቢ እንቅስቃሴ',
+    },
     'recentSales': {
       AppLanguage.english: 'Recent sales',
       AppLanguage.amharic: 'የቅርብ ሽያጮች',
+    },
+    'noIncomeActivityYet': {
+      AppLanguage.english: 'No activity for this source yet.',
+      AppLanguage.amharic: 'ለዚህ ምንጭ ገና እንቅስቃሴ የለም።',
     },
     'noSalesYet': {
       AppLanguage.english: 'No sales yet.',
@@ -455,6 +508,34 @@ class AppLocalizer {
       AppLanguage.amharic: 'ስም ያስፈልጋል።',
     },
     'category': {AppLanguage.english: 'Category', AppLanguage.amharic: 'ምድብ'},
+    'chooseCategory': {
+      AppLanguage.english: 'Choose a category',
+      AppLanguage.amharic: 'ምድብ ይምረጡ',
+    },
+    'addCategory': {
+      AppLanguage.english: 'Add category',
+      AppLanguage.amharic: 'ምድብ ጨምር',
+    },
+    'saveCategory': {
+      AppLanguage.english: 'Save category',
+      AppLanguage.amharic: 'ምድብ አስቀምጥ',
+    },
+    'clearCategory': {
+      AppLanguage.english: 'Clear category',
+      AppLanguage.amharic: 'ምድብ አጥፋ',
+    },
+    'categoryRequired': {
+      AppLanguage.english: 'Enter a category name.',
+      AppLanguage.amharic: 'የምድብ ስም ያስገቡ።',
+    },
+    'categoryOptional': {
+      AppLanguage.english: 'You can leave this empty if needed.',
+      AppLanguage.amharic: 'ካስፈለገ ባዶ መተው ይችላሉ።',
+    },
+    'categorySelected': {
+      AppLanguage.english: 'Selected category: {name}',
+      AppLanguage.amharic: 'የተመረጠው ምድብ: {name}',
+    },
     'sku': {AppLanguage.english: 'SKU', AppLanguage.amharic: 'SKU'},
     'suggestedSellingPrice': {
       AppLanguage.english: 'Suggested selling price',
@@ -521,6 +602,10 @@ class AppLocalizer {
     'searchProducts': {
       AppLanguage.english: 'Search by name, category, or SKU',
       AppLanguage.amharic: 'በስም፣ በምድብ ወይም በSKU ፈልግ',
+    },
+    'allCategories': {
+      AppLanguage.english: 'All categories',
+      AppLanguage.amharic: 'ሁሉም ምድቦች',
     },
     'lowStockOnly': {
       AppLanguage.english: 'Low stock only',
@@ -654,6 +739,51 @@ class AppLocalizer {
       AppLanguage.english: '{name} has only {count} left.',
       AppLanguage.amharic: '{name} {count} ብቻ ቀርቶታል።',
     },
+    'addFastMoney': {
+      AppLanguage.english: 'Add fast money',
+      AppLanguage.amharic: 'ፈጣን ገቢ ጨምር',
+    },
+    'productOrService': {
+      AppLanguage.english: 'Product or service',
+      AppLanguage.amharic: 'እቃ ወይም አገልግሎት',
+    },
+    'productOrServiceRequired': {
+      AppLanguage.english: 'Enter a product or service name.',
+      AppLanguage.amharic: 'የእቃ ወይም የአገልግሎት ስም ያስገቡ።',
+    },
+    'priceIncome': {
+      AppLanguage.english: 'Price (income)',
+      AppLanguage.amharic: 'ዋጋ (ገቢ)',
+    },
+    'purchaseCost': {
+      AppLanguage.english: 'Purchase cost',
+      AppLanguage.amharic: 'የግዢ ወጪ',
+    },
+    'autoProfit': {
+      AppLanguage.english: 'Profit',
+      AppLanguage.amharic: 'ትርፍ',
+    },
+    'saveFastMoney': {
+      AppLanguage.english: 'Save fast money',
+      AppLanguage.amharic: 'ፈጣን ገቢን አስቀምጥ',
+    },
+    'fastMoneySaved': {
+      AppLanguage.english: 'Fast money saved.',
+      AppLanguage.amharic: 'ፈጣን ገቢው ተመዝግቧል።',
+    },
+    'fastMoneyEntries': {
+      AppLanguage.english: 'Fast money entries',
+      AppLanguage.amharic: 'የፈጣን ገቢ መዝገቦች',
+    },
+    'noFastMoneyYet': {
+      AppLanguage.english: 'No fast money yet',
+      AppLanguage.amharic: 'እስካሁን ፈጣን ገቢ የለም',
+    },
+    'fastMoneyHelp': {
+      AppLanguage.english:
+          'Use this for quick one-line product or service income.',
+      AppLanguage.amharic: 'ይህን ለፈጣን አንድ-መስመር የእቃ ወይም የአገልግሎት ገቢ ይጠቀሙ።',
+    },
     'addExpense': {
       AppLanguage.english: 'Add expense',
       AppLanguage.amharic: 'ወጪ ጨምር',
@@ -749,6 +879,18 @@ class AppLocalizer {
       AppLanguage.english: 'Add purchase item',
       AppLanguage.amharic: 'የግዢ እቃ ጨምር',
     },
+    'searchProductsToRestock': {
+      AppLanguage.english: 'Search products to restock',
+      AppLanguage.amharic: 'ለመሙላት እቃ ፈልግ',
+    },
+    'pickProduct': {
+      AppLanguage.english: 'Pick a product',
+      AppLanguage.amharic: 'እቃ ይምረጡ',
+    },
+    'noProductsInCategory': {
+      AppLanguage.english: 'Try another category or search word.',
+      AppLanguage.amharic: 'ሌላ ምድብ ወይም የፍለጋ ቃል ይሞክሩ።',
+    },
     'product': {AppLanguage.english: 'Product', AppLanguage.amharic: 'እቃ'},
     'quantity': {AppLanguage.english: 'Quantity', AppLanguage.amharic: 'ብዛት'},
     'validQuantity': {
@@ -810,6 +952,127 @@ class AppLocalizer {
       AppLanguage.amharic: 'የተመዘገቡ መሙላቶች ከወጪ ዝርዝር ጋር እዚህ ይታያሉ።',
     },
     'each': {AppLanguage.english: 'each', AppLanguage.amharic: 'እያንዳንዱ'},
+    'services': {
+      AppLanguage.english: 'Services',
+      AppLanguage.amharic: 'አገልግሎቶች',
+    },
+    'serviceShortHint': {
+      AppLanguage.english: 'Track repair jobs and income',
+      AppLanguage.amharic: 'የጥገና ስራዎችን እና ገቢያቸውን ይከታተሉ',
+    },
+    'allStatuses': {
+      AppLanguage.english: 'All statuses',
+      AppLanguage.amharic: 'ሁሉም ሁኔታዎች',
+    },
+    'serviceType': {
+      AppLanguage.english: 'Service type',
+      AppLanguage.amharic: 'የአገልግሎት አይነት',
+    },
+    'serviceTypeRequired': {
+      AppLanguage.english: 'Enter the service type.',
+      AppLanguage.amharic: 'የአገልግሎቱን አይነት ያስገቡ።',
+    },
+    'customerName': {
+      AppLanguage.english: 'Customer name',
+      AppLanguage.amharic: 'የደንበኛ ስም',
+    },
+    'customerNameRequired': {
+      AppLanguage.english: 'Enter the customer name.',
+      AppLanguage.amharic: 'የደንበኛውን ስም ያስገቡ።',
+    },
+    'customerPhone': {
+      AppLanguage.english: 'Customer phone',
+      AppLanguage.amharic: 'የደንበኛ ስልክ',
+    },
+    'customerPhoneRequired': {
+      AppLanguage.english: 'Enter the customer phone.',
+      AppLanguage.amharic: 'የደንበኛውን ስልክ ያስገቡ።',
+    },
+    'serviceStatus': {
+      AppLanguage.english: 'Service status',
+      AppLanguage.amharic: 'የአገልግሎት ሁኔታ',
+    },
+    'serviceCharge': {
+      AppLanguage.english: 'Service charge',
+      AppLanguage.amharic: 'የአገልግሎት ክፍያ',
+    },
+    'serviceIncome': {
+      AppLanguage.english: 'Service income',
+      AppLanguage.amharic: 'የአገልግሎት ገቢ',
+    },
+    'maintenanceCost': {
+      AppLanguage.english: 'Maintenance cost',
+      AppLanguage.amharic: 'የጥገና ወጪ',
+    },
+    'noCost': {
+      AppLanguage.english: 'No cost',
+      AppLanguage.amharic: 'ወጪ የለም',
+    },
+    'cashCost': {
+      AppLanguage.english: 'Cash cost',
+      AppLanguage.amharic: 'የገንዘብ ወጪ',
+    },
+    'sparePartFromStock': {
+      AppLanguage.english: 'Spare part from stock',
+      AppLanguage.amharic: 'ከክምችት መለዋወጫ',
+    },
+    'quantityUsed': {
+      AppLanguage.english: 'Quantity used',
+      AppLanguage.amharic: 'የተጠቀሰ ብዛት',
+    },
+    'serviceNote': {
+      AppLanguage.english: 'Service note',
+      AppLanguage.amharic: 'የአገልግሎት ማስታወሻ',
+    },
+    'addServiceJob': {
+      AppLanguage.english: 'Add service job',
+      AppLanguage.amharic: 'የአገልግሎት ስራ ጨምር',
+    },
+    'saveServiceJob': {
+      AppLanguage.english: 'Save service',
+      AppLanguage.amharic: 'አገልግሎቱን አስቀምጥ',
+    },
+    'serviceSaved': {
+      AppLanguage.english: 'Service saved.',
+      AppLanguage.amharic: 'አገልግሎቱ ተመዝግቧል።',
+    },
+    'pendingServices': {
+      AppLanguage.english: 'Pending services',
+      AppLanguage.amharic: 'በመጠባበቅ ላይ ያሉ አገልግሎቶች',
+    },
+    'paidIncome': {
+      AppLanguage.english: 'Paid income',
+      AppLanguage.amharic: 'የተከፈለ ገቢ',
+    },
+    'unpaidIncome': {
+      AppLanguage.english: 'Unpaid income',
+      AppLanguage.amharic: 'ያልተከፈለ ገቢ',
+    },
+    'noServicesYet': {
+      AppLanguage.english: 'No services yet',
+      AppLanguage.amharic: 'እስካሁን አገልግሎት የለም',
+    },
+    'serviceHelp': {
+      AppLanguage.english:
+          'Add a repair or maintenance job and track its status.',
+      AppLanguage.amharic: 'የጥገና ወይም የአገልግሎት ስራ ጨምሩ እና ሁኔታውን ይከታተሉ።',
+    },
+    'noSparePartsAvailable': {
+      AppLanguage.english: 'No spare parts available',
+      AppLanguage.amharic: 'የሚጠቀሙ መለዋወጫዎች የሉም',
+    },
+    'addInventoryBeforeServiceParts': {
+      AppLanguage.english: 'Add stock first before using spare parts.',
+      AppLanguage.amharic: 'መለዋወጫ ከመጠቀምዎ በፊት ክምችት ያስገቡ።',
+    },
+    'searchSpareParts': {
+      AppLanguage.english: 'Search spare parts',
+      AppLanguage.amharic: 'መለዋወጫ ይፈልጉ',
+    },
+    'chooseSparePart': {
+      AppLanguage.english: 'Choose spare part',
+      AppLanguage.amharic: 'መለዋወጫ ይምረጡ',
+    },
   };
 
   String t(String key, [Map<String, String> params = const {}]) {
@@ -838,6 +1101,23 @@ class AppLocalizer {
         return t('operating');
       case ExpenseKind.withdrawal:
         return t('withdrawals');
+    }
+  }
+
+  String serviceStatusLabel(ServiceStatus status) {
+    switch (status) {
+      case ServiceStatus.pending:
+        return language == AppLanguage.amharic
+            ? 'በመጠባበቅ ላይ'
+            : 'Pending';
+      case ServiceStatus.completedUnpaid:
+        return language == AppLanguage.amharic
+            ? 'ተጠናቋል - ያልተከፈለ'
+            : 'Completed - unpaid';
+      case ServiceStatus.completedPaid:
+        return language == AppLanguage.amharic
+            ? 'ተጠናቋል - ተከፍሏል'
+            : 'Completed - paid';
     }
   }
 

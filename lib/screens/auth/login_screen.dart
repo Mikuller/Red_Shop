@@ -101,10 +101,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: LanguageMenuButton(),
                   ),
                   const SizedBox(height: 12),
-                  Icon(
-                    Icons.computer,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
+                  Image.asset(
+                    'assets/branding/r1_mark.png',
+                    width: 108,
+                    height: 108,
+                    fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 18),
                   Text(

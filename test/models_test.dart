@@ -56,4 +56,18 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test('collectProductCategories returns unique sorted categories', () {
+    final products = [
+      buildProduct(stock: 4).copyWith(category: 'Accessories'),
+      buildProduct(stock: 2).copyWith(category: 'accessories'),
+      buildProduct(stock: 0).copyWith(category: 'Laptops'),
+      buildProduct(stock: 1).copyWith(category: ''),
+    ];
+
+    expect(
+      collectProductCategories(products, includeUncategorized: true),
+      ['Accessories', 'Laptops', ''],
+    );
+  });
 }
