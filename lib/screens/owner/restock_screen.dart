@@ -42,7 +42,7 @@ class _RestockScreenState extends State<RestockScreen> {
             (product) => product?.id == widget.initialProductId,
             orElse: () => null,
           );
-    var selectedProductId = widget.initialProductId ?? products.first.id;
+    var selectedProductId = initialProduct?.id ?? products.first.id;
     var selectedCategory = initialProduct == null
         ? null
         : initialProduct.category.trim().isEmpty
@@ -55,207 +55,209 @@ class _RestockScreenState extends State<RestockScreen> {
       isScrollControlled: true,
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setModalState) {
-            final categoryOptions = collectProductCategories(
-              products,
-              includeUncategorized: true,
-            );
-            final filteredProducts = products.where((product) {
-              final normalizedQuery = query.toLowerCase();
-              final matchesQuery =
-                  normalizedQuery.isEmpty ||
-                  product.name.toLowerCase().contains(normalizedQuery) ||
-                  product.category.toLowerCase().contains(normalizedQuery) ||
-                  product.sku.toLowerCase().contains(normalizedQuery);
-              final matchesCategory = selectedCategory == null
-                  ? true
-                  : selectedCategory!.isEmpty
-                  ? product.category.trim().isEmpty
-                  : product.category.toLowerCase() ==
-                        selectedCategory!.toLowerCase();
-              return matchesQuery && matchesCategory;
-            }).toList()
-              ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-            final effectiveSelectedProductId = filteredProducts.any(
-              (product) => product.id == selectedProductId,
-            )
-                ? selectedProductId
-                : filteredProducts.isEmpty
-                ? null
-                : filteredProducts.first.id;
+          final categoryOptions = collectProductCategories(
+            products,
+            includeUncategorized: true,
+          );
+          final filteredProducts = products.where((product) {
+            final normalizedQuery = query.toLowerCase();
+            final matchesQuery =
+                normalizedQuery.isEmpty ||
+                product.name.toLowerCase().contains(normalizedQuery) ||
+                product.category.toLowerCase().contains(normalizedQuery) ||
+                product.sku.toLowerCase().contains(normalizedQuery);
+            final matchesCategory = selectedCategory == null
+                ? true
+                : selectedCategory!.isEmpty
+                ? product.category.trim().isEmpty
+                : product.category.toLowerCase() ==
+                      selectedCategory!.toLowerCase();
+            return matchesQuery && matchesCategory;
+          }).toList()
+            ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+          final effectiveSelectedProductId = filteredProducts.any(
+            (product) => product.id == selectedProductId,
+          )
+              ? selectedProductId
+              : filteredProducts.isEmpty
+              ? null
+              : filteredProducts.first.id;
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-              ),
-              child: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        strings.t('addPurchaseItem'),
-                        style: Theme.of(context).textTheme.titleLarge,
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
+            ),
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      strings.t('addPurchaseItem'),
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 18),
+                    TextField(
+                      controller: searchController,
+                      onChanged: (value) {
+                        setModalState(() => query = value.trim());
+                      },
+                      decoration: InputDecoration(
+                        hintText: strings.t('searchProductsToRestock'),
+                        prefixIcon: const Icon(Icons.search),
                       ),
-                      const SizedBox(height: 18),
-                      TextField(
-                        controller: searchController,
-                        onChanged: (value) {
-                          setModalState(() => query = value.trim());
-                        },
-                        decoration: InputDecoration(
-                          hintText: strings.t('searchProductsToRestock'),
-                          prefixIcon: const Icon(Icons.search),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      CategoryFilterBar(
-                        categories: categoryOptions,
-                        selectedCategory: selectedCategory,
-                        allLabel: strings.t('allCategories'),
-                        uncategorizedLabel: strings.t('uncategorized'),
-                        onSelected: (value) {
-                          setModalState(() => selectedCategory = value);
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        strings.t('pickProduct'),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 10),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 240),
-                        child: filteredProducts.isEmpty
-                            ? EmptyStateView(
-                                icon: Icons.search_off_rounded,
-                                title: strings.t('noProductMatch'),
-                                message: strings.t('noProductsInCategory'),
-                              )
-                            : ListView.separated(
-                                shrinkWrap: true,
-                                itemCount: filteredProducts.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(height: 10),
-                                itemBuilder: (context, index) {
-                                  final product = filteredProducts[index];
-                                  return _RestockProductTile(
-                                    product: product,
-                                    strings: strings,
-                                    selected:
-                                        product.id == effectiveSelectedProductId,
-                                    onTap: () {
-                                      setModalState(
-                                        () => selectedProductId = product.id,
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                      ),
-                      const SizedBox(height: 14),
-                      TextFormField(
-                        controller: quantityController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: strings.t('quantity'),
-                        ),
-                        validator: (value) {
-                          final quantity = int.tryParse(value ?? '');
-                          if (quantity == null || quantity <= 0) {
-                            return strings.t('validQuantity');
-                          }
-
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      TextFormField(
-                        controller: unitCostController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: strings.t('unitCost'),
-                        ),
-                        validator: (value) {
-                          final unitCost = double.tryParse(value ?? '');
-                          if (unitCost == null || unitCost < 0) {
-                            return strings.t('validUnitCost');
-                          }
-
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: effectiveSelectedProductId == null
-                            ? null
-                            : () {
-                                if (!formKey.currentState!.validate()) {
-                                  return;
-                                }
-
-                                final product = products.firstWhere(
-                                  (item) => item.id == effectiveSelectedProductId,
-                                );
-                                final quantity =
-                                    int.tryParse(
-                                      quantityController.text.trim(),
-                                    ) ??
-                                    0;
-                                final unitCost =
-                                    double.tryParse(
-                                      unitCostController.text.trim(),
-                                    ) ??
-                                    0;
-                                final existingIndex = _items.indexWhere(
-                                  (item) => item.productId == product.id,
-                                );
-
-                                setState(() {
-                                  if (existingIndex == -1) {
-                                    _items.add(
-                                      PurchaseItem(
-                                        productId: product.id,
-                                        productName: product.name,
-                                        quantity: quantity,
-                                        unitCost: unitCost,
-                                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    CategoryFilterBar(
+                      categories: categoryOptions,
+                      selectedCategory: selectedCategory,
+                      allLabel: strings.t('allCategories'),
+                      uncategorizedLabel: strings.t('uncategorized'),
+                      onSelected: (value) {
+                        setModalState(() => selectedCategory = value);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      strings.t('pickProduct'),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 10),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 240),
+                      child: filteredProducts.isEmpty
+                          ? EmptyStateView(
+                              icon: Icons.search_off_rounded,
+                              title: strings.t('noProductMatch'),
+                              message: strings.t('noProductsInCategory'),
+                            )
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: filteredProducts.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final product = filteredProducts[index];
+                                return _RestockProductTile(
+                                  product: product,
+                                  strings: strings,
+                                  selected:
+                                      product.id == effectiveSelectedProductId,
+                                  onTap: () {
+                                    setModalState(
+                                      () => selectedProductId = product.id,
                                     );
-                                  } else {
-                                    final current = _items[existingIndex];
-                                    final totalQuantity =
-                                        current.quantity + quantity;
-                                    final blendedUnitCost =
-                                        (current.lineTotal +
-                                            (quantity * unitCost)) /
-                                        totalQuantity;
-                                    _items[existingIndex] = PurchaseItem(
-                                      productId: current.productId,
-                                      productName: current.productName,
-                                      quantity: totalQuantity,
-                                      unitCost: blendedUnitCost,
-                                    );
-                                  }
-                                });
-
-                                Navigator.of(sheetContext).pop();
+                                  },
+                                );
                               },
-                        child: Text(strings.t('addItem')),
+                            ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: quantityController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: strings.t('quantity'),
                       ),
-                    ],
-                  ),
+                      validator: (value) {
+                        final quantity = int.tryParse(value ?? '');
+                        if (quantity == null || quantity <= 0) {
+                          return strings.t('validQuantity');
+                        }
+
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: unitCostController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: strings.t('unitCost'),
+                      ),
+                      validator: (value) {
+                        final unitCost = double.tryParse(value ?? '');
+                        if (unitCost == null || unitCost < 0) {
+                          return strings.t('validUnitCost');
+                        }
+
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: effectiveSelectedProductId == null
+                          ? null
+                          : () {
+                              if (!formKey.currentState!.validate()) {
+                                return;
+                              }
+
+                              final product = products.firstWhere(
+                                (item) => item.id == effectiveSelectedProductId,
+                              );
+                              final quantity =
+                                  int.tryParse(
+                                    quantityController.text.trim(),
+                                  ) ??
+                                  0;
+                              final unitCost =
+                                  double.tryParse(
+                                    unitCostController.text.trim(),
+                                  ) ??
+                                  0;
+                              final existingIndex = _items.indexWhere(
+                                (item) => item.productId == product.id,
+                              );
+
+                              setState(() {
+                                if (existingIndex == -1) {
+                                  _items.add(
+                                    PurchaseItem(
+                                      productId: product.id,
+                                      productName: product.name,
+                                      quantity: quantity,
+                                      unitCost: unitCost,
+                                    ),
+                                  );
+                                } else {
+                                  final current = _items[existingIndex];
+                                  final totalQuantity = current.quantity + quantity;
+                                  final blendedUnitCost =
+                                      (current.lineTotal + (quantity * unitCost)) /
+                                      totalQuantity;
+                                  _items[existingIndex] = PurchaseItem(
+                                    productId: current.productId,
+                                    productName: current.productName,
+                                    quantity: totalQuantity,
+                                    unitCost: blendedUnitCost,
+                                  );
+                                }
+                              });
+
+                              Navigator.of(sheetContext).pop();
+                            },
+                      child: Text(strings.t('addItem')),
+                    ),
+                  ],
                 ),
               ),
-            );
+            ),
+          );
         },
       ),
     );
+
+    quantityController.dispose();
+    unitCostController.dispose();
+    searchController.dispose();
   }
 
   Future<void> _recordPurchase(UserModel actor) async {
@@ -362,43 +364,14 @@ class _RestockScreenState extends State<RestockScreen> {
                         ),
                       ),
                       const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      product.category.isEmpty
-                          ? strings.t('uncategorized')
-                          : product.category,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${product.stock} ${strings.t('pcs')} | ${strings.t('cost', {'amount': formatCurrency(product.averageCost)})}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Icon(
-                selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                color: selected ? highlight : null,
-              ),
-            ],
-          ),
-
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _showAddItemDialog(products),
+                              icon: const Icon(Icons.add),
+                              label: Text(strings.t('addItem')),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -498,8 +471,7 @@ class _RestockScreenState extends State<RestockScreen> {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    final purchases =
-                        purchaseSnapshot.data ?? <PurchaseRecord>[];
+                    final purchases = purchaseSnapshot.data ?? <PurchaseRecord>[];
                     if (purchases.isEmpty) {
                       return EmptyStateView(
                         icon: Icons.history_toggle_off_outlined,
@@ -588,16 +560,6 @@ class _RestockProductTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-SizedBox(
-  width: 48,
-  child: Radio<bool>(
-    value: true,
-    groupValue: selected,
-    onChanged: (_) => onTap(),
-  ),
-),
-
-          const SizedBox(width: 4),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

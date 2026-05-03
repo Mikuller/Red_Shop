@@ -152,37 +152,35 @@ class _FastMoneyScreenState extends State<FastMoneyScreen> {
                                         0,
                                     actor: actor,
                                   );
-                                   if (!mounted) {
-                                     return;
-                                   }
- 
-                                   Navigator.of(sheetContext).pop();
-                                   if (!mounted) {
-                                     return;
-                                   }
-                                   messenger.showSnackBar(
-                                     SnackBar(
-                                       content: Text(
-                                         strings.t('fastMoneySaved'),
-                                       ),
-                                     ),
-                                   );
-                                 } catch (error) {
-                                   if (!mounted) {
-                                     return;
-                                   }
- 
-                                   setModalState(() => isSaving = false);
-                                   if (!mounted) {
-                                     return;
-                                   }
-                                   messenger.showSnackBar(
-                                     SnackBar(
-                                       content: Text(describeError(error)),
-                                     ),
-                                   );
-                                 }
+                                  if (!mounted) {
+                                    return;
+                                  }
 
+                                  Navigator.of(sheetContext).pop();
+                                  if (mounted) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          strings.t('fastMoneySaved'),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } catch (error) {
+                                  if (!mounted) {
+                                    return;
+                                  }
+
+                                  setModalState(() => isSaving = false);
+                                  if (!mounted) {
+                                    return;
+                                  }
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(describeError(error)),
+                                    ),
+                                  );
+                                }
                               },
                         child: isSaving
                             ? const SizedBox(
@@ -289,8 +287,7 @@ class _FastMoneyScreenState extends State<FastMoneyScreen> {
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
                         itemCount: sales.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: 12),
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final sale = sales[index];
                           return AppPanel(
@@ -333,7 +330,9 @@ class _FastMoneyScreenState extends State<FastMoneyScreen> {
                                               context,
                                             ).textTheme.bodyMedium,
                                           ),
-                                          if (sale.processedByName.isNotEmpty) ...[
+                                          if (sale
+                                              .processedByName
+                                              .isNotEmpty) ...[
                                             const SizedBox(height: 4),
                                             Text(
                                               strings.t('addedBy', {

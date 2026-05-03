@@ -14,10 +14,12 @@ import 'package:red_shop/screens/owner/owner_home.dart';
 import 'package:red_shop/services/auth_service.dart';
 import 'package:red_shop/theme/app_theme.dart';
 import 'package:red_shop/widgets/shop_widgets.dart';
+import 'package:red_shop/widgets/github_ota_updater.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const RedShopApp());
 }
 
@@ -35,17 +37,19 @@ class RedShopApp extends StatelessWidget {
           create: (_) => AppLanguageProvider(initialLanguage: initialLanguage),
         ),
       ],
-      child: Consumer<AppLanguageProvider>(
-        builder: (context, language, _) {
-          return MaterialApp(
-            title: language.strings.t('appName'),
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.build(),
-            home: !kReleaseMode && previewMode != null
-                ? CheatsheetPreviewScreen(mode: previewMode)
-                : const AuthWrapper(),
-          );
-        },
+      child: GitHubOTAUpdater(
+        child: Consumer<AppLanguageProvider>(
+          builder: (context, language, _) {
+            return MaterialApp(
+              title: language.strings.t('appName'),
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.build(),
+              home: !kReleaseMode && previewMode != null
+                  ? CheatsheetPreviewScreen(mode: previewMode)
+                  : const AuthWrapper(),
+            );
+          },
+        ),
       ),
     );
   }

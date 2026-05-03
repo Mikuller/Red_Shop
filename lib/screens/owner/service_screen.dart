@@ -67,9 +67,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
                       selectedCategory!.toLowerCase();
             return matchesQuery && matchesCategory;
           }).toList();
-          final effectivePartId = filteredParts.any(
-            (product) => product.id == selectedPartId,
-          )
+          final effectivePartId =
+              filteredParts.any((product) => product.id == selectedPartId)
               ? selectedPartId
               : filteredParts.isEmpty
               ? null
@@ -91,126 +90,52 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                    Text(
-                      strings.t('addServiceJob'),
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 18),
-                    TextFormField(
-                      controller: serviceTypeController,
-                      decoration: InputDecoration(
-                        labelText: strings.t('serviceType'),
+                      Text(
+                        strings.t('addServiceJob'),
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? strings.t('serviceTypeRequired')
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: customerNameController,
-                      decoration: InputDecoration(
-                        labelText: strings.t('customerName'),
-                      ),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? strings.t('customerNameRequired')
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: customerPhoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: strings.t('customerPhone'),
-                      ),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? strings.t('customerPhoneRequired')
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: serviceChargeController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: strings.t('serviceCharge'),
-                      ),
-                      validator: (value) {
-                        final amount = double.tryParse(value ?? '');
-                        if (amount == null || amount < 0) {
-                          return strings.t('validAmount');
-                        }
-
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<ServiceStatus>(
-                      initialValue: status,
-                      decoration: InputDecoration(
-                        labelText: strings.t('serviceStatus'),
-                      ),
-                      items: ServiceStatus.values
-                          .map(
-                            (value) => DropdownMenuItem(
-                              value: value,
-                              child: Text(strings.serviceStatusLabel(value)),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setModalState(() => status = value);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      strings.t('maintenanceCost'),
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _CostModeChip(
-                          selected: costMode == _ServiceCostMode.none,
-                          label: strings.t('noCost'),
-                          onTap: () {
-                            setModalState(() => costMode = _ServiceCostMode.none);
-                          },
+                      const SizedBox(height: 18),
+                      TextFormField(
+                        controller: serviceTypeController,
+                        decoration: InputDecoration(
+                          labelText: strings.t('serviceType'),
                         ),
-                        _CostModeChip(
-                          selected: costMode == _ServiceCostMode.cash,
-                          label: strings.t('cashCost'),
-                          onTap: () {
-                            setModalState(() => costMode = _ServiceCostMode.cash);
-                          },
-                        ),
-                        _CostModeChip(
-                          selected: costMode == _ServiceCostMode.sparePart,
-                          label: strings.t('sparePartFromStock'),
-                          onTap: () {
-                            setModalState(
-                              () => costMode = _ServiceCostMode.sparePart,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    if (costMode == _ServiceCostMode.cash) ...[
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? strings.t('serviceTypeRequired')
+                            : null,
+                      ),
                       const SizedBox(height: 14),
                       TextFormField(
-                        controller: cashCostController,
+                        controller: customerNameController,
+                        decoration: InputDecoration(
+                          labelText: strings.t('customerName'),
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? strings.t('customerNameRequired')
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: customerPhoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(
+                          labelText: strings.t('customerPhone'),
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? strings.t('customerPhoneRequired')
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: serviceChargeController,
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
                         decoration: InputDecoration(
-                          labelText: strings.t('cashCost'),
+                          labelText: strings.t('serviceCharge'),
                         ),
                         validator: (value) {
                           final amount = double.tryParse(value ?? '');
@@ -221,201 +146,293 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           return null;
                         },
                       ),
-                    ],
-                    if (costMode == _ServiceCostMode.sparePart) ...[
                       const SizedBox(height: 14),
-                      if (partCatalog.isEmpty)
-                        EmptyStateView(
-                          icon: Icons.build_circle_outlined,
-                          title: strings.t('noSparePartsAvailable'),
-                          message: strings.t('addInventoryBeforeServiceParts'),
-                        )
-                      else ...[
-                        TextField(
-                          controller: sparePartSearchController,
-                          onChanged: (value) {
-                            setModalState(() => partQuery = value.trim());
-                          },
-                          decoration: InputDecoration(
-                            hintText: strings.t('searchSpareParts'),
-                            prefixIcon: const Icon(Icons.search),
+                      DropdownButtonFormField<ServiceStatus>(
+                        initialValue: status,
+                        decoration: InputDecoration(
+                          labelText: strings.t('serviceStatus'),
+                        ),
+                        items: ServiceStatus.values
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(strings.serviceStatusLabel(value)),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setModalState(() => status = value);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        strings.t('maintenanceCost'),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _CostModeChip(
+                            selected: costMode == _ServiceCostMode.none,
+                            label: strings.t('noCost'),
+                            onTap: () {
+                              setModalState(
+                                () => costMode = _ServiceCostMode.none,
+                              );
+                            },
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        CategoryFilterBar(
-                          categories: categoryOptions,
-                          selectedCategory: selectedCategory,
-                          allLabel: strings.t('allCategories'),
-                          uncategorizedLabel: strings.t('uncategorized'),
-                          onSelected: (value) {
-                            setModalState(() => selectedCategory = value);
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 220),
-                          child: filteredParts.isEmpty
-                              ? EmptyStateView(
-                                  icon: Icons.search_off_rounded,
-                                  title: strings.t('noProductMatch'),
-                                  message: strings.t('noProductsInCategory'),
-                                )
-                              : ListView.separated(
-                                  shrinkWrap: true,
-                                  itemCount: filteredParts.length,
-                                  separatorBuilder: (_, _) =>
-                                      const SizedBox(height: 10),
-                                  itemBuilder: (context, index) {
-                                    final product = filteredParts[index];
-                                    return _ServicePartTile(
-                                      product: product,
-                                      strings: strings,
-                                      selected: product.id == effectivePartId,
-                                      onTap: () {
-                                        setModalState(
-                                          () => selectedPartId = product.id,
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                        ),
+                          _CostModeChip(
+                            selected: costMode == _ServiceCostMode.cash,
+                            label: strings.t('cashCost'),
+                            onTap: () {
+                              setModalState(
+                                () => costMode = _ServiceCostMode.cash,
+                              );
+                            },
+                          ),
+                          _CostModeChip(
+                            selected: costMode == _ServiceCostMode.sparePart,
+                            label: strings.t('sparePartFromStock'),
+                            onTap: () {
+                              setModalState(
+                                () => costMode = _ServiceCostMode.sparePart,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      if (costMode == _ServiceCostMode.cash) ...[
                         const SizedBox(height: 14),
                         TextFormField(
-                          controller: sparePartQuantityController,
-                          keyboardType: TextInputType.number,
+                          controller: cashCostController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           decoration: InputDecoration(
-                            labelText: strings.t('quantityUsed'),
+                            labelText: strings.t('cashCost'),
                           ),
                           validator: (value) {
-                            final quantity = int.tryParse(value ?? '');
-                            if (quantity == null || quantity <= 0) {
-                              return strings.t('validQuantity');
+                            final amount = double.tryParse(value ?? '');
+                            if (amount == null || amount < 0) {
+                              return strings.t('validAmount');
                             }
 
                             return null;
                           },
                         ),
                       ],
-                    ],
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: noteController,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: InputDecoration(
-                        labelText: strings.t('serviceNote'),
+                      if (costMode == _ServiceCostMode.sparePart) ...[
+                        const SizedBox(height: 14),
+                        if (partCatalog.isEmpty)
+                          EmptyStateView(
+                            icon: Icons.build_circle_outlined,
+                            title: strings.t('noSparePartsAvailable'),
+                            message: strings.t(
+                              'addInventoryBeforeServiceParts',
+                            ),
+                          )
+                        else ...[
+                          TextField(
+                            controller: sparePartSearchController,
+                            onChanged: (value) {
+                              setModalState(() => partQuery = value.trim());
+                            },
+                            decoration: InputDecoration(
+                              hintText: strings.t('searchSpareParts'),
+                              prefixIcon: const Icon(Icons.search),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          CategoryFilterBar(
+                            categories: categoryOptions,
+                            selectedCategory: selectedCategory,
+                            allLabel: strings.t('allCategories'),
+                            uncategorizedLabel: strings.t('uncategorized'),
+                            onSelected: (value) {
+                              setModalState(() => selectedCategory = value);
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 220),
+                            child: filteredParts.isEmpty
+                                ? EmptyStateView(
+                                    icon: Icons.search_off_rounded,
+                                    title: strings.t('noProductMatch'),
+                                    message: strings.t('noProductsInCategory'),
+                                  )
+                                : ListView.separated(
+                                    shrinkWrap: true,
+                                    itemCount: filteredParts.length,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 10),
+                                    itemBuilder: (context, index) {
+                                      final product = filteredParts[index];
+                                      return _ServicePartTile(
+                                        product: product,
+                                        strings: strings,
+                                        selected: product.id == effectivePartId,
+                                        onTap: () {
+                                          setModalState(
+                                            () => selectedPartId = product.id,
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: sparePartQuantityController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: strings.t('quantityUsed'),
+                            ),
+                            validator: (value) {
+                              final quantity = int.tryParse(value ?? '');
+                              if (quantity == null || quantity <= 0) {
+                                return strings.t('validQuantity');
+                              }
+
+                              return null;
+                            },
+                          ),
+                        ],
+                      ],
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: noteController,
+                        minLines: 2,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          labelText: strings.t('serviceNote'),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: isSaving
-                          ? null
-                          : () async {
-                              setModalState(() => isSaving = true);
-                        if (!formKey.currentState!.validate()) {
-                          setModalState(() => isSaving = false);
-                          return;
-                        }
-
-                        if (costMode == _ServiceCostMode.sparePart &&
-                            effectivePartId == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(strings.t('chooseSparePart')),
-                            ),
-                          );
-                          setModalState(() => isSaving = false);
-                          return;
-                        }
-
-                        final sparePart = effectivePartId == null
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: isSaving
                             ? null
-                            : partCatalog.firstWhere(
-                                (product) => product.id == effectivePartId,
-                              );
-                        final quantity =
-                            int.tryParse(
-                              sparePartQuantityController.text.trim(),
-                            ) ??
-                            0;
+                            : () async {
+                                setModalState(() => isSaving = true);
+                                if (!formKey.currentState!.validate()) {
+                                  setModalState(() => isSaving = false);
+                                  return;
+                                }
 
-                        try {
-                          await _shopService.createService(
-                            ServiceRecord(
-                              id: '',
-                              serviceType: serviceTypeController.text.trim(),
-                              customerName: customerNameController.text.trim(),
-                              customerPhone: customerPhoneController.text.trim(),
-                              serviceCharge:
-                                  double.tryParse(
-                                    serviceChargeController.text.trim(),
-                                  ) ??
-                                  0,
-                              status: status,
-                              cashCost: costMode == _ServiceCostMode.cash
-                                  ? double.tryParse(
-                                        cashCostController.text.trim(),
-                                      ) ??
-                                      0
-                                  : 0,
-                              sparePartProductId:
-                                  costMode == _ServiceCostMode.sparePart
-                                  ? sparePart?.id ?? ''
-                                  : '',
-                              sparePartProductName:
-                                  costMode == _ServiceCostMode.sparePart
-                                  ? sparePart?.name ?? ''
-                                  : '',
-                              sparePartQuantity:
-                                  costMode == _ServiceCostMode.sparePart
-                                  ? quantity
-                                  : 0,
-                              sparePartUnitCost:
-                                  costMode == _ServiceCostMode.sparePart
-                                  ? sparePart?.averageCost ?? 0
-                                  : 0,
-                              note: noteController.text.trim(),
-                              createdAt: DateTime.now(),
-                              updatedAt: DateTime.now(),
-                              createdByUid: actor.uid,
-                              createdByName: actor.name,
-                            ),
-                          );
-                           if (!sheetContext.mounted) {
-                             return;
-                           }
-                           Navigator.of(sheetContext).pop();
-                           if (!mounted) {
-                             return;
-                           }
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             SnackBar(
-                               content: Text(strings.t('serviceSaved')),
-                             ),
-                           );
-                         } catch (error) {
-                           if (!mounted) {
-                             return;
-                           }
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             SnackBar(content: Text(describeError(error))),
-                           );
-                         } finally {
-                           if (sheetContext.mounted) {
-                             setModalState(() => isSaving = false);
-                           }
-                         }
+                                if (costMode == _ServiceCostMode.sparePart &&
+                                    effectivePartId == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        strings.t('chooseSparePart'),
+                                      ),
+                                    ),
+                                  );
+                                  setModalState(() => isSaving = false);
+                                  return;
+                                }
 
-                      },
-                      child: isSaving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(strings.t('saveServiceJob')),
-                    ),
+                                final sparePart = effectivePartId == null
+                                    ? null
+                                    : partCatalog.firstWhere(
+                                        (product) =>
+                                            product.id == effectivePartId,
+                                      );
+                                final quantity =
+                                    int.tryParse(
+                                      sparePartQuantityController.text.trim(),
+                                    ) ??
+                                    0;
+
+                                try {
+                                  await _shopService.createService(
+                                    ServiceRecord(
+                                      id: '',
+                                      serviceType: serviceTypeController.text
+                                          .trim(),
+                                      customerName: customerNameController.text
+                                          .trim(),
+                                      customerPhone: customerPhoneController
+                                          .text
+                                          .trim(),
+                                      serviceCharge:
+                                          double.tryParse(
+                                            serviceChargeController.text.trim(),
+                                          ) ??
+                                          0,
+                                      status: status,
+                                      cashCost:
+                                          costMode == _ServiceCostMode.cash
+                                          ? double.tryParse(
+                                                  cashCostController.text
+                                                      .trim(),
+                                                ) ??
+                                                0
+                                          : 0,
+                                      sparePartProductId:
+                                          costMode == _ServiceCostMode.sparePart
+                                          ? sparePart?.id ?? ''
+                                          : '',
+                                      sparePartProductName:
+                                          costMode == _ServiceCostMode.sparePart
+                                          ? sparePart?.name ?? ''
+                                          : '',
+                                      sparePartQuantity:
+                                          costMode == _ServiceCostMode.sparePart
+                                          ? quantity
+                                          : 0,
+                                      sparePartUnitCost:
+                                          costMode == _ServiceCostMode.sparePart
+                                          ? sparePart?.averageCost ?? 0
+                                          : 0,
+                                      note: noteController.text.trim(),
+                                      createdAt: DateTime.now(),
+                                      updatedAt: DateTime.now(),
+                                      createdByUid: actor.uid,
+                                      createdByName: actor.name,
+                                    ),
+                                  );
+                                  if (!sheetContext.mounted) {
+                                    return;
+                                  }
+                                  Navigator.of(sheetContext).pop();
+                                  if (!mounted) {
+                                    return;
+                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(strings.t('serviceSaved')),
+                                    ),
+                                  );
+                                } catch (error) {
+                                  if (!mounted) {
+                                    return;
+                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(describeError(error)),
+                                    ),
+                                  );
+                                } finally {
+                                  if (sheetContext.mounted) {
+                                    setModalState(() => isSaving = false);
+                                  }
+                                }
+                              },
+                        child: isSaving
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(strings.t('saveServiceJob')),
+                      ),
                     ],
                   ),
                 ),
@@ -478,18 +495,26 @@ class _ServiceScreenState extends State<ServiceScreen> {
                   : services
                         .where((service) => service.status == _filterStatus)
                         .toList();
-              final pendingCount = services
-                  .where((service) => service.status == ServiceStatus.pending)
-                  .length;
+              // final pendingCount = services
+              //     .where((service) => service.status == ServiceStatus.pending)
+              //     .length;
               final paidIncome = services
-                  .where((service) => service.status == ServiceStatus.completedPaid)
-                  .fold<double>(0, (sum, service) => sum + service.serviceCharge);
+                  .where(
+                    (service) => service.status == ServiceStatus.completedPaid,
+                  )
+                  .fold<double>(
+                    0,
+                    (sum, service) => sum + service.serviceCharge,
+                  );
               final unpaidIncome = services
                   .where(
                     (service) =>
                         service.status == ServiceStatus.completedUnpaid,
                   )
-                  .fold<double>(0, (sum, service) => sum + service.serviceCharge);
+                  .fold<double>(
+                    0,
+                    (sum, service) => sum + service.serviceCharge,
+                  );
               final totalCost = services.fold<double>(
                 0,
                 (sum, service) => sum + service.totalCost,
@@ -508,7 +533,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                           children: [
                             _ServiceSummaryCard(
                               label: strings.t('pendingServices'),
-                              value: '$pendingCount',
+                              value: '\$pendingCount',
                             ),
                             _ServiceSummaryCard(
                               label: strings.t('paidIncome'),
@@ -557,9 +582,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
                             children: [
                               EmptyStateView(
-                              icon: Icons.build_circle_outlined,
-                              title: strings.t('noServicesYet'),
-                              message: strings.t('serviceHelp'),
+                                icon: Icons.build_circle_outlined,
+                                title: strings.t('noServicesYet'),
+                                message: strings.t('serviceHelp'),
                               ),
                             ],
                           )
@@ -574,38 +599,24 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      product.category.isEmpty
-                          ? strings.t('uncategorized')
-                          : product.category,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${product.stock} ${strings.t('pcs')} | ${formatCurrency(product.averageCost)}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                service.serviceType,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
@@ -628,16 +639,15 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                           itemBuilder: (context) =>
                                               ServiceStatus.values
                                                   .map(
-                                                    (status) =>
-                                                        PopupMenuItem(
-                                                          value: status,
-                                                          child: Text(
-                                                            strings
-                                                                .serviceStatusLabel(
-                                                                  status,
-                                                                ),
-                                                          ),
-                                                        ),
+                                                    (status) => PopupMenuItem(
+                                                      value: status,
+                                                      child: Text(
+                                                        strings
+                                                            .serviceStatusLabel(
+                                                              status,
+                                                            ),
+                                                      ),
+                                                    ),
                                                   )
                                                   .toList(),
                                         ),
@@ -654,7 +664,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
                                           ),
                                           color: _statusColor(service.status),
                                         ),
-                                        if (service.sparePartProductName.isNotEmpty)
+                                        if (service
+                                            .sparePartProductName
+                                            .isNotEmpty)
                                           _ServiceStatusPill(
                                             label:
                                                 '${service.sparePartProductName} x${service.sparePartQuantity}',
@@ -778,11 +790,6 @@ class _ServicePartTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          Radio<bool>(
-            value: true,
-            groupValue: selected,
-            onChanged: (_) => onTap(),
-          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -840,9 +847,9 @@ class _ServiceSummaryCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

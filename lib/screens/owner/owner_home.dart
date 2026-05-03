@@ -11,6 +11,7 @@ import 'package:red_shop/screens/owner/service_screen.dart';
 import 'package:red_shop/screens/owner/staff_screen.dart';
 import 'package:red_shop/screens/pos/pos_screen.dart';
 import 'package:red_shop/screens/shared/fast_money_screen.dart';
+import 'package:red_shop/screens/shared/settings_screen.dart';
 import 'package:red_shop/services/shop_service.dart';
 import 'package:red_shop/theme/app_theme.dart';
 import 'package:red_shop/utils/formatters.dart';
@@ -224,6 +225,13 @@ class _OwnerHomeState extends State<OwnerHome> {
         ),
         actions: [
           const LanguageMenuButton(),
+          IconButton(
+            tooltip: 'Settings',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const SettingsScreen()),
+            ),
+            icon: const Icon(Icons.settings),
+          ),
           IconButton(
             tooltip: strings.t('logout'),
             onPressed: () => context.read<ShopAuthProvider>().logout(),
@@ -445,10 +453,7 @@ class _SheetScaffold extends StatelessWidget {
               Text(title, style: Theme.of(context).textTheme.titleLarge),
               if (subtitle != null) ...[
                 const SizedBox(height: 8),
-                Text(
-                  subtitle!,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
               ],
               const SizedBox(height: 16),
               child,
@@ -664,43 +669,45 @@ class _LowStockPanel extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium,
             )
           else
-            ...summary.lowStockProducts.take(5).map(
-              (product) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product.name,
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  color: AppTheme.textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
+            ...summary.lowStockProducts
+                .take(5)
+                .map(
+                  (product) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.name,
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      color: AppTheme.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                              Text(
+                                product.category.isEmpty
+                                    ? strings.t('thresholdOnly', {
+                                        'count': '${product.lowStockThreshold}',
+                                      })
+                                    : strings.t('thresholdWithCategory', {
+                                        'category': product.category,
+                                        'count': '${product.lowStockThreshold}',
+                                      }),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
                           ),
-                          Text(
-                            product.category.isEmpty
-                                ? strings.t('thresholdOnly', {
-                                    'count': '${product.lowStockThreshold}',
-                                  })
-                                : strings.t('thresholdWithCategory', {
-                                    'category': product.category,
-                                    'count': '${product.lowStockThreshold}',
-                                  }),
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(child: StockBadge(product: product)),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Flexible(child: StockBadge(product: product)),
-                  ],
+                  ),
                 ),
-              ),
-            ),
         ],
       ),
     );
