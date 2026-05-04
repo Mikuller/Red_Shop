@@ -105,10 +105,31 @@ class GitHubOTAService {
   /// Current download task ID
   String? _currentTaskId;
 
+  /// Last download URL for retry
+  String? _lastDownloadUrl;
+
+  /// Last release info for retry dialog
+  GitHubRelease? _lastRelease;
+
+  /// Whether the last download failed
+  bool _downloadFailed = false;
+
+  /// Get whether download failed (for retry UI)
+  bool get downloadFailed => _downloadFailed;
+
+  /// Get last download URL (for retry)
+  String? get lastDownloadUrl => _lastDownloadUrl;
+
+  /// Get last release info (for retry dialog)
+  GitHubRelease? get lastRelease => _lastRelease;
+
   /// Reset download progress state
   void resetDownloadProgress() {
     downloadProgress.value = null;
     _currentTaskId = null;
+    _lastDownloadUrl = null;
+    _lastRelease = null;
+    _downloadFailed = false;
   }
 
   // TODO: Replace with your actual GitHub repository details
@@ -226,11 +247,15 @@ class GitHubOTAService {
   /// Returns the download task ID. Download continues even if app is suspended.
   Future<String?> downloadAPK(
     String downloadUrl,
-    Function(int, int) onProgress,
-  ) async {
+    Function(int, int) onProgress, {
+    GitHubRelease? release,
+  }) async {
     try {
       debugPrint('Starting background APK download from: $downloadUrl');
       _isDownloadCancelled = false;
+      _lastDownloadUrl = downloadUrl;
+      _lastRelease = release;
+      _downloadFailed = false;
 
       // Request notification permission for Android 13+
       if (Platform.isAndroid) {
@@ -272,6 +297,17 @@ class GitHubOTAService {
     }
   }
 
+  /// Retry the last failed download
+  Future<String?> retryDownload(Function(int, int) onProgress) async {
+    if (_lastDownloadUrl == null) {
+      debugPrint('No previous download URL to retry');
+      return null;
+    }
+    debugPrint('Retrying download: $_lastDownloadUrl');
+    _downloadFailed = false;
+    return downloadAPK(_lastDownloadUrl!, onProgress, release: _lastRelease);
+  }
+
   /// Check download status and auto-install if complete
   Future<void> checkAndInstallDownload() async {
     if (_currentTaskId == null) return;
@@ -291,10 +327,12 @@ class GitHubOTAService {
             await installAPK(apkFile);
             _currentTaskId = null;
           }
-        } else if (task.status == DownloadTaskStatus.failed) {
-          debugPrint('Background download failed');
+        } else if (task.status == DownloadTaskStatus.failed ||
+            task.status == DownloadTaskStatus.canceled) {
+          debugPrint('Background download failed or cancelled');
+          _downloadFailed = true;
           downloadProgress.value = DownloadProgress(
-            statusMessage: 'Download failed',
+            statusMessage: 'Download failed - tap Retry',
           );
           _currentTaskId = null;
         }

@@ -49,6 +49,7 @@ class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
     final p = _progress;
     final isDownloading = p.isDownloading;
     final isInstalling = p.isInstalling;
+    final downloadFailed = GitHubOTAService.instance.downloadFailed;
 
     return AlertDialog(
       title: const Text('Update Available'),
@@ -67,27 +68,38 @@ class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
           ),
           const SizedBox(height: 8),
           Text(widget.release.body, style: const TextStyle(fontSize: 14)),
-          if (isDownloading || isInstalling) ...[
+          if (isDownloading || isInstalling || downloadFailed) ...[
             const SizedBox(height: 16),
-            LinearProgressIndicator(
-              value: p.total > 0 ? p.received / p.total : 0.0,
-            ),
+            if (!downloadFailed)
+              LinearProgressIndicator(
+                value: p.total > 0 ? p.received / p.total : 0.0,
+              ),
             const SizedBox(height: 8),
             Text(p.statusMessage, style: const TextStyle(fontSize: 12)),
-            const SizedBox(height: 4),
-            Text(
-              'Downloaded: ${(p.received / 1024 / 1024).toStringAsFixed(1)} MB / ${(p.total / 1024 / 1024).toStringAsFixed(1)} MB',
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
-            ),
+            if (!downloadFailed && p.total > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Downloaded: ${(p.received / 1024 / 1024).toStringAsFixed(1)} MB / ${(p.total / 1024 / 1024).toStringAsFixed(1)} MB',
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+            ],
           ],
         ],
       ),
       actions: [
-        if (!isDownloading && !isInstalling) ...[
+        if (!isDownloading && !isInstalling && !downloadFailed) ...[
           TextButton(onPressed: widget.onCancel, child: const Text('Later')),
           ElevatedButton(
             onPressed: _downloadAndInstall,
             child: const Text('Update Now'),
+          ),
+        ],
+        if (downloadFailed) ...[
+          TextButton(onPressed: widget.onCancel, child: const Text('Later')),
+          ElevatedButton(
+            onPressed: _retryDownload,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Retry'),
           ),
         ],
         if (isDownloading && !isInstalling) ...[
@@ -101,6 +113,34 @@ class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
 
   void _cancelDownload() {
     GitHubOTAService.instance.cancelDownload();
+  }
+
+  Future<void> _retryDownload() async {
+    GitHubOTAService.instance.resetDownloadProgress();
+
+    try {
+      final taskId = await GitHubOTAService.instance.retryDownload((
+        received,
+        total,
+      ) {
+        // Progress is handled by flutter_downloader callback
+      });
+
+      if (taskId == null) {
+        throw Exception('Failed to retry download. Check debug logs.');
+      }
+
+      // Dismiss dialog - system notification will show progress
+      GitHubOTAService.instance.downloadProgress.value = DownloadProgress(
+        isDownloading: true,
+        statusMessage: 'Download retrying in background',
+      );
+      _safePop();
+    } catch (e) {
+      GitHubOTAService.instance.downloadProgress.value = DownloadProgress(
+        statusMessage: 'Retry failed: $e',
+      );
+    }
   }
 
   Future<void> _downloadAndInstall() async {
@@ -117,6 +157,7 @@ class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
         (received, total) {
           // Progress is handled by flutter_downloader callback
         },
+        release: widget.release,
       );
 
       if (taskId == null) {
@@ -180,10 +221,22 @@ class _GitHubOTAUpdaterState extends State<GitHubOTAUpdater> {
     GitHubOTAService.instance.onDownloadComplete = (apkFile) {
       _handleDownloadComplete(apkFile);
     };
+    // Set callback for showing retry dialog
+    _onShowRetryDialog = () {
+      if (mounted && GitHubOTAService.instance.lastRelease != null) {
+        _showUpdateDialog(GitHubOTAService.instance.lastRelease!);
+      }
+    };
     // Check for background downloads on app start/resume
     WidgetsBinding.instance.addObserver(_AppLifecycleObserver());
-    // Check immediately on start
-    GitHubOTAService.instance.checkAndInstallDownload();
+    // Check immediately on start - also handle failed downloads
+    GitHubOTAService.instance.checkAndInstallDownload().then((_) {
+      if (mounted &&
+          GitHubOTAService.instance.downloadFailed &&
+          GitHubOTAService.instance.lastRelease != null) {
+        _showUpdateDialog(GitHubOTAService.instance.lastRelease!);
+      }
+    });
     if (widget.enabled) {
       _checkForUpdates();
     }
@@ -192,6 +245,7 @@ class _GitHubOTAUpdaterState extends State<GitHubOTAUpdater> {
   @override
   void dispose() {
     GitHubOTAService.instance.onDownloadComplete = null;
+    _onShowRetryDialog = null;
     super.dispose();
   }
 
@@ -260,13 +314,22 @@ class _GitHubOTAUpdaterState extends State<GitHubOTAUpdater> {
   }
 }
 
+/// Callback for showing retry dialog when download fails
+VoidCallback? _onShowRetryDialog;
+
 /// Lifecycle observer to check background download status when app resumes
 class _AppLifecycleObserver extends WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Check if background download completed
-      GitHubOTAService.instance.checkAndInstallDownload();
+      // Check if background download completed or failed
+      GitHubOTAService.instance.checkAndInstallDownload().then((_) {
+        // If download failed, show retry dialog
+        if (GitHubOTAService.instance.downloadFailed &&
+            GitHubOTAService.instance.lastRelease != null) {
+          _onShowRetryDialog?.call();
+        }
+      });
     }
   }
 }
