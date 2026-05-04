@@ -6,6 +6,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// GitHub Release information model
 class GitHubRelease {
@@ -61,6 +63,23 @@ class GitHubRelease {
   }
 }
 
+/// Download progress data
+class DownloadProgress {
+  final int received;
+  final int total;
+  final bool isDownloading;
+  final bool isInstalling;
+  final String statusMessage;
+
+  DownloadProgress({
+    this.received = 0,
+    this.total = 0,
+    this.isDownloading = false,
+    this.isInstalling = false,
+    this.statusMessage = '',
+  });
+}
+
 /// GitHub-based OTA update service
 class GitHubOTAService {
   static GitHubOTAService? _instance;
@@ -71,6 +90,25 @@ class GitHubOTAService {
   bool _isDownloadCancelled = false;
   void cancelDownload() {
     _isDownloadCancelled = true;
+  }
+
+  /// Service-level download progress notifier.
+  /// Survives dialog dismissal so background downloads report progress
+  /// even when the update dialog is not visible.
+  final ValueNotifier<DownloadProgress?> downloadProgress =
+      ValueNotifier<DownloadProgress?>(null);
+
+  /// Callback triggered when download completes (even if dialog was dismissed).
+  /// Passes the downloaded APK file if successful, null if cancelled/failed.
+  void Function(File?)? onDownloadComplete;
+
+  /// Current download task ID
+  String? _currentTaskId;
+
+  /// Reset download progress state
+  void resetDownloadProgress() {
+    downloadProgress.value = null;
+    _currentTaskId = null;
   }
 
   // TODO: Replace with your actual GitHub repository details
@@ -120,7 +158,7 @@ class GitHubOTAService {
             },
           )
           .timeout(
-            const Duration(seconds: 10),
+            const Duration(seconds: 30),
             onTimeout: () {
               debugPrint('GitHub API request timed out');
               throw Exception('Request timeout');
@@ -184,121 +222,85 @@ class GitHubOTAService {
     }
   }
 
-  /// Download APK from GitHub release with optimized performance
-  Future<File?> downloadAPK(
+  /// Download APK using flutter_downloader for true background support
+  /// Returns the download task ID. Download continues even if app is suspended.
+  Future<String?> downloadAPK(
     String downloadUrl,
     Function(int, int) onProgress,
   ) async {
     try {
-      debugPrint('Starting APK download from: $downloadUrl');
+      debugPrint('Starting background APK download from: $downloadUrl');
       _isDownloadCancelled = false;
 
-      // Use a more efficient HTTP client with larger buffer
-      final client = http.Client();
-      final request = http.Request('GET', Uri.parse(downloadUrl));
-
-      // Add headers for better performance
-      request.headers.addAll({
-        'Accept-Encoding': 'gzip',
-        'User-Agent': 'Red-Shop-App',
-        'Connection': 'keep-alive',
-      });
-
-      final streamedResponse = await client.send(request);
-
-      if (streamedResponse.statusCode != 200) {
-        debugPrint('Failed to download APK: ${streamedResponse.statusCode}');
-        client.close();
-        return null;
-      }
-
-      final contentLength = streamedResponse.contentLength ?? 0;
-      debugPrint(
-        'APK file size: ${(contentLength / 1024 / 1024).toStringAsFixed(2)} MB',
-      );
-
-      // Download to app cache directory for reliable FileProvider access
-      final tempDir = await getTemporaryDirectory();
-      final apkFile = File('${tempDir.path}/red_shop_update.apk');
-
-      // Check if file already exists and delete it
-      if (await apkFile.exists()) {
-        await apkFile.delete();
-        debugPrint('Deleted existing APK file');
-      }
-
-      // Open file for writing with buffering
-      final sink = apkFile.openWrite();
-      int received = 0;
-      final startTime = DateTime.now();
-
-      try {
-        // Download with larger chunks for better performance
-        await for (final chunk in streamedResponse.stream) {
-          // Check for cancellation
-          if (_isDownloadCancelled) {
-            debugPrint('Download cancelled by user');
-            try {
-              await sink.close();
-            } catch (e) {
-              debugPrint('Error closing sink: $e');
-            }
-            try {
-              client.close();
-            } catch (e) {
-              debugPrint('Error closing client: $e');
-            }
-            if (await apkFile.exists()) {
-              await apkFile.delete();
-            }
-            return null;
-          }
-
-          sink.add(chunk);
-          received += chunk.length;
-          onProgress(received, contentLength);
-
-          // Debug progress less frequently to reduce overhead
-          if (contentLength > 0 && received % (1024 * 1024) == 0) {
-            // Every 1MB
-            final elapsed = DateTime.now().difference(startTime).inMilliseconds;
-            final speed = elapsed > 0
-                ? (received / 1024 / 1024) / (elapsed / 1000)
-                : 0;
-            debugPrint(
-              'Downloaded: ${(received / 1024 / 1024).toStringAsFixed(2)} MB, Speed: ${speed.toStringAsFixed(2)} MB/s',
-            );
-          }
+      // Request notification permission for Android 13+
+      if (Platform.isAndroid) {
+        final status = await Permission.notification.status;
+        if (status.isDenied) {
+          debugPrint('Requesting notification permission');
+          await Permission.notification.request();
         }
-      } finally {
-        await sink.close();
-        client.close();
       }
 
-      // Verify file was written correctly
-      final fileSize = await apkFile.length();
-      final totalTime = DateTime.now().difference(startTime).inMilliseconds;
-      final avgSpeed = totalTime > 0
-          ? (fileSize / 1024 / 1024) / (totalTime / 1000)
-          : 0;
+      // Download to app cache directory
+      final tempDir = await getTemporaryDirectory();
+      final savedDir = tempDir.path;
 
-      debugPrint('APK downloaded to: ${apkFile.path}');
-      debugPrint(
-        'Downloaded file size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB',
-      );
-      debugPrint(
-        'Total time: ${totalTime / 1000}s, Average speed: ${avgSpeed.toStringAsFixed(2)} MB/s',
+      // Initialize progress notifier
+      downloadProgress.value = DownloadProgress(
+        received: 0,
+        total: 0,
+        isDownloading: true,
+        statusMessage: 'Download started in background',
       );
 
-      if (fileSize == 0) {
-        debugPrint('Error: Downloaded file is empty');
-        return null;
-      }
+      // Use flutter_downloader with system notification (simplest approach)
+      final taskId = await FlutterDownloader.enqueue(
+        url: downloadUrl,
+        savedDir: savedDir,
+        fileName: 'red_shop_update.apk',
+        showNotification: true, // Show system notification
+        openFileFromNotification: false, // We'll handle install manually
+      );
 
-      return apkFile;
+      _currentTaskId = taskId;
+      debugPrint('Background download started with task ID: $taskId');
+      return taskId;
     } catch (e) {
-      debugPrint('Error downloading APK: $e');
+      debugPrint('Error starting background download: $e');
+      onDownloadComplete?.call(null);
       return null;
+    }
+  }
+
+  /// Check download status and auto-install if complete
+  Future<void> checkAndInstallDownload() async {
+    if (_currentTaskId == null) return;
+
+    try {
+      final tasks = await FlutterDownloader.loadTasksWithRawQuery(
+        query: 'SELECT * FROM task WHERE task_id = "$_currentTaskId"',
+      );
+
+      if (tasks != null && tasks.isNotEmpty) {
+        final task = tasks.first;
+        if (task.status == DownloadTaskStatus.complete) {
+          debugPrint('Download complete: ${task.savedDir}/${task.filename}');
+          final apkFile = File('${task.savedDir}/${task.filename}');
+          if (await apkFile.exists()) {
+            debugPrint('Installing APK from background download');
+            await installAPK(apkFile);
+            _currentTaskId = null;
+          }
+        } else if (task.status == DownloadTaskStatus.failed) {
+          debugPrint('Background download failed');
+          downloadProgress.value = DownloadProgress(
+            statusMessage: 'Download failed',
+          );
+          _currentTaskId = null;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking download status: $e');
     }
   }
 

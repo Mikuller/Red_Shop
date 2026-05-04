@@ -15,16 +15,33 @@ import 'package:red_shop/services/auth_service.dart';
 import 'package:red_shop/theme/app_theme.dart';
 import 'package:red_shop/widgets/shop_widgets.dart';
 import 'package:red_shop/widgets/github_ota_updater.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
+
+@pragma('vm:entry-point')
+void downloadCallback(String id, int status, int progress) {
+  // Callback runs in isolate - just log for debugging
+  // Status: 0=undefined, 1=enqueued, 2=running, 3=complete, 4=failed, 5=paused, 6=canceled
+  debugPrint('Download: $id, status: $status, progress: $progress');
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(const RedShopApp());
+  await FlutterDownloader.initialize(debug: kDebugMode);
+  FlutterDownloader.registerCallback(downloadCallback);
+
+  runApp(RedShopApp());
 }
 
 class RedShopApp extends StatelessWidget {
-  const RedShopApp({super.key});
+  RedShopApp({super.key});
+
+  /// Navigator key used by the OTA updater to show dialogs reliably.
+  /// MaterialApp places its Navigator *after* the builder, so the builder's
+  /// context does not have a Navigator ancestor. Using a GlobalKey lets us
+  /// show dialogs from code that runs outside the normal widget tree flow.
+  final _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
@@ -37,19 +54,24 @@ class RedShopApp extends StatelessWidget {
           create: (_) => AppLanguageProvider(initialLanguage: initialLanguage),
         ),
       ],
-      child: GitHubOTAUpdater(
-        child: Consumer<AppLanguageProvider>(
-          builder: (context, language, _) {
-            return MaterialApp(
-              title: language.strings.t('appName'),
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.build(),
-              home: !kReleaseMode && previewMode != null
-                  ? CheatsheetPreviewScreen(mode: previewMode)
-                  : const AuthWrapper(),
-            );
-          },
-        ),
+      child: Consumer<AppLanguageProvider>(
+        builder: (context, language, _) {
+          return MaterialApp(
+            navigatorKey: _navigatorKey,
+            title: language.strings.t('appName'),
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.build(),
+            builder: (context, child) {
+              return GitHubOTAUpdater(
+                navigatorKey: _navigatorKey,
+                child: child!,
+              );
+            },
+            home: !kReleaseMode && previewMode != null
+                ? CheatsheetPreviewScreen(mode: previewMode)
+                : const AuthWrapper(),
+          );
+        },
       ),
     );
   }

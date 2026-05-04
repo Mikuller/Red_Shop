@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:red_shop/services/github_ota_service.dart';
 
@@ -17,174 +19,136 @@ class GitHubOTAUpdateDialog extends StatefulWidget {
 }
 
 class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
-  bool _isDownloading = false;
-  bool _isInstalling = false;
-  int _downloadedBytes = 0;
-  int _totalBytes = 0;
-  String _statusMessage = '';
+  @override
+  void initState() {
+    super.initState();
+    // Listen to service-level progress so the dialog shows progress
+    // even if it was dismissed and reopened during an active download.
+    GitHubOTAService.instance.downloadProgress.addListener(_onProgressChanged);
+  }
+
+  @override
+  void dispose() {
+    GitHubOTAService.instance.downloadProgress.removeListener(
+      _onProgressChanged,
+    );
+    super.dispose();
+  }
+
+  void _onProgressChanged() {
+    if (mounted) setState(() {});
+  }
+
+  DownloadProgress get _progress {
+    return GitHubOTAService.instance.downloadProgress.value ??
+        DownloadProgress();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Localizations(
-      locale: const Locale('en', 'US'),
-      delegates: const [
-        DefaultMaterialLocalizations.delegate,
-        DefaultWidgetsLocalizations.delegate,
-      ],
-      child: Material(
-        color: Colors.transparent,
-        child: AlertDialog(
-          title: const Text('Update Available'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'New version ${widget.release.version} is available!',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.release.name,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(widget.release.body, style: const TextStyle(fontSize: 14)),
-              if (_isDownloading || _isInstalling) ...[
-                const SizedBox(height: 16),
-                LinearProgressIndicator(
-                  value: _totalBytes > 0 ? _downloadedBytes / _totalBytes : 0.0,
-                ),
-                const SizedBox(height: 8),
-                Text(_statusMessage, style: const TextStyle(fontSize: 12)),
-                const SizedBox(height: 4),
-                Text(
-                  'Downloaded: ${(_downloadedBytes / 1024 / 1024).toStringAsFixed(1)} MB / ${(_totalBytes / 1024 / 1024).toStringAsFixed(1)} MB',
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ],
-            ],
+    final p = _progress;
+    final isDownloading = p.isDownloading;
+    final isInstalling = p.isInstalling;
+
+    return AlertDialog(
+      title: const Text('Update Available'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'New version ${widget.release.version} is available!',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
-          actions: [
-            if (!_isDownloading && !_isInstalling) ...[
-              TextButton(
-                onPressed: widget.onCancel,
-                child: const Text('Later'),
-              ),
-              ElevatedButton(
-                onPressed: _downloadAndInstall,
-                child: const Text('Update Now'),
-              ),
-            ],
-            if (_isDownloading && !_isInstalling) ...[
-              TextButton(
-                onPressed: _cancelDownload,
-                child: const Text('Cancel'),
-              ),
-            ],
-            if (_isInstalling)
-              TextButton(onPressed: null, child: const Text('Installing...')),
+          const SizedBox(height: 8),
+          Text(
+            widget.release.name,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(widget.release.body, style: const TextStyle(fontSize: 14)),
+          if (isDownloading || isInstalling) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: p.total > 0 ? p.received / p.total : 0.0,
+            ),
+            const SizedBox(height: 8),
+            Text(p.statusMessage, style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 4),
+            Text(
+              'Downloaded: ${(p.received / 1024 / 1024).toStringAsFixed(1)} MB / ${(p.total / 1024 / 1024).toStringAsFixed(1)} MB',
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            ),
           ],
-        ),
+        ],
       ),
+      actions: [
+        if (!isDownloading && !isInstalling) ...[
+          TextButton(onPressed: widget.onCancel, child: const Text('Later')),
+          ElevatedButton(
+            onPressed: _downloadAndInstall,
+            child: const Text('Update Now'),
+          ),
+        ],
+        if (isDownloading && !isInstalling) ...[
+          TextButton(onPressed: _cancelDownload, child: const Text('Cancel')),
+        ],
+        if (isInstalling)
+          TextButton(onPressed: null, child: const Text('Installing...')),
+      ],
     );
   }
 
   void _cancelDownload() {
     GitHubOTAService.instance.cancelDownload();
-    setState(() {
-      _isDownloading = false;
-      _statusMessage = 'Download cancelled';
-    });
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    });
   }
 
   Future<void> _downloadAndInstall() async {
     if (widget.release.downloadUrl.isEmpty) {
-      setState(() {
-        _statusMessage = 'No APK file found in this release';
-      });
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      });
+      _showErrorAndPop('No APK file found in this release');
       return;
     }
 
-    setState(() {
-      _isDownloading = true;
-      _downloadedBytes = 0;
-      _totalBytes = 0;
-      _statusMessage = 'Downloading update...';
-    });
+    GitHubOTAService.instance.resetDownloadProgress();
 
     try {
-      // Download the APK
-      final apkFile = await GitHubOTAService.instance.downloadAPK(
+      final taskId = await GitHubOTAService.instance.downloadAPK(
         widget.release.downloadUrl,
         (received, total) {
-          setState(() {
-            _downloadedBytes = received;
-            _totalBytes = total;
-            if (total > 0) {
-              final progress = (received / total * 100).toStringAsFixed(1);
-              _statusMessage = 'Downloading: $progress%';
-            } else {
-              _statusMessage = 'Downloading...';
-            }
-          });
+          // Progress is handled by flutter_downloader callback
         },
       );
 
-      if (apkFile == null) {
+      if (taskId == null) {
         throw Exception(
-          'Failed to download APK. Check debug logs for details.',
+          'Failed to start download. Check debug logs for details.',
         );
       }
 
-      setState(() {
-        _isDownloading = false;
-        _isInstalling = true;
-        _statusMessage = 'Installing update...';
-      });
-
-      // Install the APK
-      final success = await GitHubOTAService.instance.installAPK(apkFile);
-
-      if (success) {
-        debugPrint('APK installation initiated successfully');
-
-        // Close dialog after initiating installation
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      } else {
-        throw Exception('Failed to install APK');
-      }
+      // Dismiss dialog - system notification will show progress
+      // Download continues in background even if app is suspended
+      GitHubOTAService.instance.downloadProgress.value = DownloadProgress(
+        isDownloading: true,
+        statusMessage: 'Download in background - check notification',
+      );
+      _safePop();
     } catch (e) {
-      setState(() {
-        _isDownloading = false;
-        _isInstalling = false;
-      });
+      GitHubOTAService.instance.downloadProgress.value = DownloadProgress(
+        statusMessage: 'Update failed: $e',
+      );
+    }
+  }
 
-      if (mounted) {
-        setState(() {
-          _statusMessage = 'Update failed: $e';
-        });
-        // Don't use Navigator.pop here as it causes context issues
-        // The dialog will be closed by user action or app lifecycle
-      }
+  void _showErrorAndPop(String message) {
+    GitHubOTAService.instance.downloadProgress.value = DownloadProgress(
+      statusMessage: message,
+    );
+    Future.delayed(const Duration(seconds: 2), _safePop);
+  }
+
+  void _safePop() {
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
     }
   }
 }
@@ -193,22 +157,58 @@ class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
 class GitHubOTAUpdater extends StatefulWidget {
   final Widget child;
   final bool enabled;
+  final GlobalKey<NavigatorState> navigatorKey;
 
-  const GitHubOTAUpdater({super.key, required this.child, this.enabled = true});
+  const GitHubOTAUpdater({
+    super.key,
+    required this.child,
+    required this.navigatorKey,
+    this.enabled = true,
+  });
 
   @override
   State<GitHubOTAUpdater> createState() => _GitHubOTAUpdaterState();
 }
 
 class _GitHubOTAUpdaterState extends State<GitHubOTAUpdater> {
-  GitHubRelease? _pendingUpdate;
   bool _isChecking = false;
 
   @override
   void initState() {
     super.initState();
+    // Register callback for background download completion
+    GitHubOTAService.instance.onDownloadComplete = (apkFile) {
+      _handleDownloadComplete(apkFile);
+    };
+    // Check for background downloads on app start/resume
+    WidgetsBinding.instance.addObserver(_AppLifecycleObserver());
+    // Check immediately on start
+    GitHubOTAService.instance.checkAndInstallDownload();
     if (widget.enabled) {
       _checkForUpdates();
+    }
+  }
+
+  @override
+  void dispose() {
+    GitHubOTAService.instance.onDownloadComplete = null;
+    super.dispose();
+  }
+
+  Future<void> _handleDownloadComplete(File? apkFile) async {
+    if (apkFile == null) {
+      debugPrint('Background download failed or was cancelled');
+      return;
+    }
+
+    debugPrint('Background download complete: ${apkFile.path}');
+    // Auto-install the APK even if dialog was dismissed
+    final success = await GitHubOTAService.instance.installAPK(apkFile);
+    if (success) {
+      debugPrint('Background installation initiated');
+    } else {
+      debugPrint('Background installation failed');
+      // Optionally show a notification here
     }
   }
 
@@ -221,45 +221,53 @@ class _GitHubOTAUpdaterState extends State<GitHubOTAUpdater> {
 
     try {
       final update = await GitHubOTAService.instance.checkForUpdates();
-      if (update != null) {
-        setState(() {
-          _pendingUpdate = update;
+      if (update != null && mounted) {
+        // Use showDialog for proper Material dialog theming (backdrop, elevation, etc.)
+        // Defer to post-frame to avoid calling showDialog during build phase
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _showUpdateDialog(update);
+          }
         });
       }
     } catch (e) {
       debugPrint('Error checking for updates: $e');
     } finally {
-      setState(() {
-        _isChecking = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isChecking = false;
+        });
+      }
     }
+  }
+
+  void _showUpdateDialog(GitHubRelease update) {
+    final ctx = widget.navigatorKey.currentContext;
+    if (ctx == null) return;
+    showDialog(
+      context: ctx,
+      barrierDismissible: false, // User must choose Later or Update
+      builder: (dialogContext) => GitHubOTAUpdateDialog(
+        release: update,
+        onCancel: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget content = widget.child;
+    return widget.child;
+  }
+}
 
-    if (_pendingUpdate != null) {
-      content = Directionality(
-        textDirection: TextDirection.ltr,
-        child: Stack(
-          children: [
-            content,
-            if (_pendingUpdate != null)
-              GitHubOTAUpdateDialog(
-                release: _pendingUpdate!,
-                onCancel: () {
-                  setState(() {
-                    _pendingUpdate = null;
-                  });
-                },
-              ),
-          ],
-        ),
-      );
+/// Lifecycle observer to check background download status when app resumes
+class _AppLifecycleObserver extends WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Check if background download completed
+      GitHubOTAService.instance.checkAndInstallDownload();
     }
-
-    return content;
   }
 }
 
