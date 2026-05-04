@@ -35,12 +35,23 @@ class GitHubRelease {
       }
     }
 
+    // Parse published_at safely
+    DateTime publishedAt;
+    try {
+      publishedAt = DateTime.parse(json['published_at'] ?? '');
+    } catch (e) {
+      debugPrint(
+        'Error parsing published_at: ${json['published_at']}, using current time',
+      );
+      publishedAt = DateTime.now();
+    }
+
     return GitHubRelease(
       tagName: json['tag_name'] ?? '',
       name: json['name'] ?? '',
       body: json['body'] ?? '',
       downloadUrl: downloadUrl,
-      publishedAt: DateTime.parse(json['published_at'] ?? ''),
+      publishedAt: publishedAt,
     );
   }
 
@@ -86,10 +97,13 @@ class GitHubOTAService {
     }
 
     try {
+      debugPrint('Getting package info...');
       final currentPackage = await PackageInfo.fromPlatform();
       final currentVersion = currentPackage.version;
 
       debugPrint('Current app version: $currentVersion');
+      debugPrint('Package name: ${currentPackage.packageName}');
+      debugPrint('Build number: ${currentPackage.buildNumber}');
 
       final url = Uri.parse(
         'https://api.github.com/repos/$_githubOwner/$_githubRepo/releases/latest',
@@ -117,7 +131,10 @@ class GitHubOTAService {
 
       if (response.statusCode == 200) {
         try {
+          debugPrint('Parsing GitHub response JSON...');
           final jsonData = jsonDecode(response.body);
+          debugPrint('JSON parsed successfully, creating GitHubRelease...');
+
           final release = GitHubRelease.fromJson(jsonData);
 
           debugPrint(
@@ -200,10 +217,9 @@ class GitHubOTAService {
         'APK file size: ${(contentLength / 1024 / 1024).toStringAsFixed(2)} MB',
       );
 
-      // Download to Downloads folder which is accessible for installation
-      final downloadsDir =
-          await getDownloadsDirectory() ?? await getTemporaryDirectory();
-      final apkFile = File('${downloadsDir.path}/red_shop_update.apk');
+      // Download to app cache directory for reliable FileProvider access
+      final tempDir = await getTemporaryDirectory();
+      final apkFile = File('${tempDir.path}/red_shop_update.apk');
 
       // Check if file already exists and delete it
       if (await apkFile.exists()) {
@@ -299,10 +315,41 @@ class GitHubOTAService {
         final fileSize = await apkFile.length();
         debugPrint('Installing APK: ${apkFile.path} (${fileSize} bytes)');
 
-        // Install directly from Downloads folder
+        if (fileSize == 0) {
+          debugPrint('Error: APK file is empty');
+          return false;
+        }
+
+        // Verify APK is valid by checking the ZIP signature (APK is a ZIP file)
+        final headerBytes = await apkFile.openRead(0, 4).first;
+        if (headerBytes.length < 4 ||
+            headerBytes[0] != 0x50 || // 'P'
+            headerBytes[1] != 0x4B || // 'K'
+            headerBytes[2] != 0x03 || // 0x03
+            headerBytes[3] !=
+                0x04 // 0x04
+                ) {
+          debugPrint(
+            'Error: Downloaded file is not a valid APK (invalid ZIP header)',
+          );
+          debugPrint(
+            'Header bytes: ${headerBytes.map((b) => '0x${b.toRadixString(16)}').join(', ')}',
+          );
+          return false;
+        }
+        debugPrint('APK ZIP header verified');
+
+        // Use FileProvider content URI for secure file access
+        // cache-path maps to getCacheDir() which matches getTemporaryDirectory()
+        final packageName = 'com.example.red_shop';
+        final contentUri =
+            'content://$packageName.fileprovider/cache/red_shop_update.apk';
+
+        debugPrint('Launching installer with URI: $contentUri');
+
         final intent = AndroidIntent(
           action: 'android.intent.action.INSTALL_PACKAGE',
-          data: apkFile.uri.toString(),
+          data: contentUri,
           type: 'application/vnd.android.package-archive',
           flags: <int>[
             Flag.FLAG_ACTIVITY_NEW_TASK,

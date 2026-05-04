@@ -25,9 +25,15 @@ class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: AlertDialog(
+    return Localizations(
+      locale: const Locale('en', 'US'),
+      delegates: const [
+        DefaultMaterialLocalizations.delegate,
+        DefaultWidgetsLocalizations.delegate,
+      ],
+      child: Material(
+        color: Colors.transparent,
+        child: AlertDialog(
           title: const Text('Update Available'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -49,12 +55,7 @@ class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                widget.release.body,
-                style: const TextStyle(fontSize: 14),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(widget.release.body, style: const TextStyle(fontSize: 14)),
               if (_isDownloading || _isInstalling) ...[
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
@@ -162,16 +163,12 @@ class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
       final success = await GitHubOTAService.instance.installAPK(apkFile);
 
       if (success) {
-        setState(() {
-          _statusMessage = 'Update installed successfully!';
-        });
+        debugPrint('APK installation initiated successfully');
 
-        // Close dialog after a short delay
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            Navigator.of(context).pop();
-          }
-        });
+        // Close dialog after initiating installation
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       } else {
         throw Exception('Failed to install APK');
       }
@@ -182,12 +179,11 @@ class _GitHubOTAUpdateDialogState extends State<GitHubOTAUpdateDialog> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Update failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _statusMessage = 'Update failed: $e';
+        });
+        // Don't use Navigator.pop here as it causes context issues
+        // The dialog will be closed by user action or app lifecycle
       }
     }
   }
